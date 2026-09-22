@@ -413,10 +413,42 @@ async function analyze(args: {
   }
 }
 
+export const DAILY_AUDIT_LIMIT = 3;
+
+async function getClientKey(): Promise<string> {
+  const { getRequest } = await import("@tanstack/react-start/server");
+  const request = getRequest();
+  const headers = request?.headers;
+  const ip =
+    headers?.get("cf-connecting-ip") ??
+    headers?.get("x-real-ip") ??
+    headers?.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown";
+  const data = new TextEncoder().encode(`ux-audit:${ip}`);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 export const runAudit = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => AuditInput.parse(input))
   .handler(async ({ data }): Promise<AuditResult> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const clientKey = await getClientKey();
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count } = await supabaseAdmin
+      .from("audit_scans")
+      .select("id", { count: "exact", head: true })
+      .eq("client_key", clientKey)
+      .gte("created_at", since);
+    if ((count ?? 0) >= DAILY_AUDIT_LIMIT) {
+      throw new Error(
+        `You've used all ${DAILY_AUDIT_LIMIT} audits for today. Please come back tomorrow.`,
+      );
+    }
+
 
     let target: URL;
     try {
