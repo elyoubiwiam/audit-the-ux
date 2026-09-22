@@ -9,11 +9,23 @@ const AuditInput = z.object({
   description: z.string().trim().min(1).max(500),
 });
 
+export const CATEGORIES = [
+  "Urgency & scarcity",
+  "Social proof",
+  "Authority & trust",
+  "Risk reversal",
+  "Anchoring & pricing psychology",
+  "CTA design & friction reduction",
+  "Storytelling & emotional framing",
+  "Personalization & specificity",
+] as const;
+
 export type AuditFinding = {
   id: string;
   title: string;
-  severity: "low" | "medium" | "high";
+  category: (typeof CATEGORIES)[number];
   explanation: string;
+  note: string | null;
 };
 
 export type AuditResult = {
@@ -108,7 +120,7 @@ function htmlToText(html: string) {
     .trim();
 }
 
-/** Signals that survive tag-stripping but matter for dark patterns. */
+/** Signals that survive tag-stripping but matter for persuasion analysis. */
 function extractSignals(html: string) {
   const buttons = [...html.matchAll(/<(button|a)\b[^>]*>([\s\S]{0,120}?)<\/\1>/gi)]
     .map((m) => htmlToText(m[2] ?? ""))
@@ -147,35 +159,38 @@ async function analyze(args: {
     findings: z.array(
       z.object({
         title: z.string(),
-        severity: z.enum(["low", "medium", "high"]),
+        category: z.enum(CATEGORIES),
         explanation: z.string(),
+        note: z.string().nullable(),
       }),
     ),
   });
 
   const prompt = [
-    `You are an ethical UX auditor. Review one webpage's landing page for dark patterns.`,
+    `You are a conversion and persuasion analyst. Review one webpage's landing page and identify which persuasion techniques it uses — this is a descriptive "what makes this page convincing" analysis, NOT a risk or dark-pattern audit.`,
     `Business: ${args.businessName}`,
     `Business description: ${args.description}`,
     `Page URL: ${args.url}`,
     ``,
-    `Flag ONLY patterns from this checklist — do not invent other categories:`,
-    `1. Fake urgency: countdown timers, "X left in stock", or "X people viewing this" claims with no evidence they are real.`,
-    `2. Missing trust signals: no visible privacy policy link, contact info, business identity, or terms of service anywhere on the page.`,
-    `3. Manipulative language: guilt-tripping opt-out copy (e.g. "No thanks, I don't want to save money"), fake scarcity, or CTA button labels that don't match their actual action.`,
-    `4. Pre-checked opt-ins: newsletter signup, marketing consent, or any checkbox pre-selected by default.`,
-    `5. Disguised ads: sponsored content or ads styled to look like organic content or navigation.`,
-    `6. Misleading claims: testimonials, trust badges, or stats (e.g. "10,000 happy customers") with no substantiation visible, or design mimicking official certifications.`,
-    `7. Confusing/dark-pattern CTAs: a "yes" option visually prominent and a "no" option hidden, greyed out, or in tiny text.`,
+    `Identify ONLY techniques from this checklist — do not invent other categories. The "category" value must match one exactly:`,
+    `1. Urgency & scarcity: countdown timers, limited stock/spots language, time-limited offers.`,
+    `2. Social proof: testimonials, review counts, customer logos, "X people bought this", usage stats.`,
+    `3. Authority & trust: certifications, media mentions, expert endorsements, security badges.`,
+    `4. Risk reversal: money-back guarantees, free trials, "cancel anytime" messaging.`,
+    `5. Anchoring & pricing psychology: crossed-out original prices, "most popular" plan highlighting, tiered pricing framing.`,
+    `6. CTA design & friction reduction: button copy, placement, contrast, number of steps implied.`,
+    `7. Storytelling & emotional framing: problem-agitation-solution structure, before/after framing, aspirational language.`,
+    `8. Personalization & specificity: tailored-feeling copy, named use cases, niche-specific language.`,
     ``,
-    `Assign each finding a severity using this rubric:`,
-    `- high: actively misleads about something material (e.g. fake claims used to drive a decision, deceptive CTA design).`,
-    `- medium: pressures or nudges unfairly but isn't outright false (e.g. guilt-trip copy, pre-checked non-financial opt-ins).`,
-    `- low: minor or borderline pattern; debatable whether it's manipulative vs. standard marketing.`,
+    `For each technique found on this page, return:`,
+    `- title: the technique name, under 60 characters.`,
+    `- category: exactly one of the categories above.`,
+    `- explanation: how the technique is being used on this page, in plain language, max 2 sentences, no jargon.`,
+    `- note: optionally, one sentence on how effective or well-executed it appears to be; use null if there's nothing meaningful to add.`,
     ``,
-    `You can only see this one landing page. Never flag or assume anything about checkout, billing, or cancellation flows — ignore those categories entirely.`,
-    `Only report issues supported by the content below. If the page looks clean, return an empty findings list.`,
-    `Write each explanation in plain language, max 2 sentences, no jargon. Keep titles under 60 characters. Return at most 12 findings. Keep the summary under 400 characters.`,
+    `You can only see this one landing page. Never comment on or assume anything about checkout, billing, or cancellation flows.`,
+    `Only report techniques actually present in the content below. If the page uses none of these techniques, return an empty findings list.`,
+    `Return at most 12 findings. Keep the summary under 400 characters — one or two sentences on the page's overall persuasion approach.`,
     ``,
     `Button and link labels: ${JSON.stringify(args.signals.buttons)}`,
     `Pre-checked checkboxes found: ${args.signals.preCheckedInputs.length}`,
@@ -205,8 +220,9 @@ async function analyze(args: {
       summary: output.summary.slice(0, 1000),
       findings: output.findings.slice(0, 12).map((f) => ({
         title: f.title.slice(0, 120),
-        severity: f.severity,
+        category: f.category,
         explanation: f.explanation.slice(0, 600),
+        note: f.note ? f.note.slice(0, 300) : null,
       })),
     };
   } catch (error) {
@@ -234,7 +250,7 @@ export const runAudit = createServerFn({ method: "POST" })
       status: "completed" | "blocked" | "failed",
       message: string | null,
       summary: string | null,
-      findings: { title: string; severity: "low" | "medium" | "high"; explanation: string }[],
+      findings: { title: string; category: AuditFinding["category"]; explanation: string; note: string | null }[],
     ): Promise<AuditResult> => {
       const { data: scan, error } = await supabaseAdmin
         .from("audit_scans")
@@ -255,7 +271,7 @@ export const runAudit = createServerFn({ method: "POST" })
         const { data: rows, error: findingsError } = await supabaseAdmin
           .from("audit_findings")
           .insert(findings.map((f) => ({ ...f, scan_id: scan.id })))
-          .select("id, title, severity, explanation");
+          .select("id, title, category, explanation, note");
         if (findingsError) throw new Error("We couldn't save the audit findings.");
         saved = (rows ?? []) as AuditFinding[];
       }
@@ -367,9 +383,9 @@ export const getAudit = createServerFn({ method: "GET" })
 
     const { data: findings } = await supabaseAdmin
       .from("audit_findings")
-      .select("id, title, severity, explanation")
+      .select("id, title, category, explanation, note")
       .eq("scan_id", scan.id)
-      .order("severity", { ascending: false });
+      .order("created_at", { ascending: true });
 
     return {
       scanId: scan.id,

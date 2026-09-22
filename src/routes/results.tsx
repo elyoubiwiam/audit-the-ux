@@ -14,15 +14,15 @@ export const Route = createFileRoute("/results")({
   loader: async ({ deps }) => (deps.scan ? getAudit({ data: { scanId: deps.scan } }) : null),
   head: () => ({
     meta: [
-      { title: "Your UX audit report — UX Audit" },
+      { title: "Your persuasion analysis — UX Audit" },
       {
         name: "description",
-        content: "Your ethical UX audit report, with issues ranked by severity.",
+        content: "The persuasion and conversion techniques identified on your page.",
       },
-      { property: "og:title", content: "Your UX audit report — UX Audit" },
+      { property: "og:title", content: "Your persuasion analysis — UX Audit" },
       {
         property: "og:description",
-        content: "Your ethical UX audit report, with issues ranked by severity.",
+        content: "The persuasion and conversion techniques identified on your page.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -32,13 +32,16 @@ export const Route = createFileRoute("/results")({
   component: Results,
 });
 
-const severityStyles: Record<string, string> = {
-  high: "bg-destructive/10 text-destructive border-destructive/20",
-  medium: "bg-amber-500/10 text-amber-700 border-amber-500/20",
-  low: "bg-primary/10 text-primary border-primary/20",
+const categoryStyles: Record<string, string> = {
+  "Urgency & scarcity": "bg-orange-500/10 text-orange-700 border-orange-500/20",
+  "Social proof": "bg-sky-500/10 text-sky-700 border-sky-500/20",
+  "Authority & trust": "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+  "Risk reversal": "bg-teal-500/10 text-teal-700 border-teal-500/20",
+  "Anchoring & pricing psychology": "bg-violet-500/10 text-violet-700 border-violet-500/20",
+  "CTA design & friction reduction": "bg-rose-500/10 text-rose-700 border-rose-500/20",
+  "Storytelling & emotional framing": "bg-amber-500/10 text-amber-700 border-amber-500/20",
+  "Personalization & specificity": "bg-cyan-500/10 text-cyan-700 border-cyan-500/20",
 };
-
-const severityRank: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
 function Results() {
   const audit = Route.useLoaderData();
@@ -47,9 +50,9 @@ function Results() {
     return (
       <Shell
         icon={<CheckCircle2 className="h-7 w-7" />}
-        title="No audit requested yet"
-        body="Start a new audit and we'll review your website's usability and ethics."
-        cta="Start an audit"
+        title="No analysis requested yet"
+        body="Start a new scan and we'll break down the persuasion techniques on your website."
+        cta="Start an analysis"
       />
     );
   }
@@ -58,7 +61,7 @@ function Results() {
     return (
       <Shell
         icon={<ShieldAlert className="h-7 w-7" />}
-        title={audit.status === "blocked" ? "This page can't be scanned" : "We couldn't finish this audit"}
+        title={audit.status === "blocked" ? "This page can't be scanned" : "We couldn't finish this analysis"}
         body={audit.message ?? "Please try another page."}
         cta="Try another site"
         subject={`${audit.businessName} — ${audit.url}`}
@@ -66,9 +69,7 @@ function Results() {
     );
   }
 
-  const findings = [...audit.findings].sort(
-    (a, b) => (severityRank[a.severity] ?? 3) - (severityRank[b.severity] ?? 3),
-  );
+  const findings = audit.findings;
 
   const scanDate = new Date(audit.createdAt).toLocaleDateString("en-US", {
     year: "numeric",
@@ -76,14 +77,9 @@ function Results() {
     day: "numeric",
   });
 
-  const counts = (["high", "medium", "low"] as const)
-    .map((sev) => ({ sev, n: findings.filter((f) => f.severity === sev).length }))
-    .filter(({ n }) => n > 0);
   const countLine =
-    counts.length > 0
-      ? `${findings.length} issue${findings.length === 1 ? "" : "s"} found — ${counts
-          .map(({ sev, n }) => `${n} ${sev}`)
-          .join(", ")}.`
+    findings.length > 0
+      ? `${findings.length} persuasion technique${findings.length === 1 ? "" : "s"} identified on this page.`
       : null;
 
   return (
@@ -94,7 +90,7 @@ function Results() {
         </p>
         <p className="mt-1 text-sm text-muted-foreground">Scanned on {scanDate}</p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground">
-          Your ethical UX audit
+          What's making this page convincing
         </h1>
         {countLine && (
           <p className="mt-4 text-base font-medium text-foreground">{countLine}</p>
@@ -108,15 +104,15 @@ function Results() {
             <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-accent text-accent-foreground">
               <CheckCircle2 className="h-5 w-5" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground">No issues found</h2>
+            <h2 className="text-lg font-semibold text-foreground">No techniques identified</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              We didn't spot any dark patterns or clear UX problems on this page.
+              We didn't spot any recognizable persuasion or conversion techniques on this page.
             </p>
           </div>
         ) : (
           <>
             <h2 className="mt-12 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Findings
+              Techniques identified
             </h2>
             <ul className="mt-4 space-y-4">
               {findings.map((finding) => (
@@ -127,16 +123,21 @@ function Results() {
                   <div className="flex items-start justify-between gap-4">
                     <h3 className="text-base font-semibold text-foreground">{finding.title}</h3>
                     <span
-                      className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${
-                        severityStyles[finding.severity] ?? severityStyles["low"]
+                      className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                        categoryStyles[finding.category] ?? "bg-primary/10 text-primary border-primary/20"
                       }`}
                     >
-                      {finding.severity}
+                      {finding.category}
                     </span>
                   </div>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                     {finding.explanation}
                   </p>
+                  {finding.note && (
+                    <p className="mt-2 text-sm italic leading-relaxed text-muted-foreground/80">
+                      {finding.note}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>
