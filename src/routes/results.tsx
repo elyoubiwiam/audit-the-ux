@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, ArrowRight, CheckCircle2, ShieldAlert } from "lucide-react";
+import { ArrowRight, CheckCircle2, ShieldAlert } from "lucide-react";
 import { z } from "zod";
 
 import { getAudit } from "@/lib/audit.functions";
