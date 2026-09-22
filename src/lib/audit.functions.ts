@@ -473,6 +473,7 @@ export const runAudit = createServerFn({ method: "POST" })
           status,
           message,
           summary,
+          client_key: clientKey,
         })
         .select("id, created_at")
         .single();
