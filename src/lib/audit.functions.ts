@@ -629,7 +629,8 @@ export const runAudit = createServerFn({ method: "POST" })
           usedHomepage = !!strategy.homepage;
         }
         if (pageText.length >= 400) break;
-      } catch {
+      } catch (e) {
+        console.log(`[audit] ${strategy.label} error`, e);
         lastError = true;
       }
     }
