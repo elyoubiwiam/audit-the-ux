@@ -79,8 +79,21 @@ function Results() {
 
   const countLine =
     findings.length > 0
-      ? `${findings.length} persuasion technique${findings.length === 1 ? "" : "s"} identified on this page.`
+      ? `We identified ${findings.length} persuasion technique${findings.length === 1 ? "" : "s"} on this page.`
       : null;
+
+  const categoryOrder = Object.keys(categoryStyles);
+  const groups = new Map<string, typeof findings>();
+  for (const finding of findings) {
+    const key = finding.category || "Other";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(finding);
+  }
+  const orderedGroups = [...groups.entries()].sort(([a], [b]) => {
+    const ia = categoryOrder.indexOf(a);
+    const ib = categoryOrder.indexOf(b);
+    return (ia === -1 ? categoryOrder.length : ia) - (ib === -1 ? categoryOrder.length : ib);
+  });
 
   return (
     <div className="min-h-screen bg-background px-6 py-16">
