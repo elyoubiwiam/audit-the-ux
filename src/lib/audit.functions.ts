@@ -477,31 +477,61 @@ export const runAudit = createServerFn({ method: "POST" })
       );
     }
 
-    let html: string;
-    try {
+    const attempt = async (ua: string) => {
       const res = await fetch(target.toString(), {
         headers: {
-          "User-Agent": BOT_UA,
-          Accept: "text/html,application/xhtml+xml",
-          "Accept-Language": "en,*",
+          "User-Agent": ua,
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9,*;q=0.5",
         },
         redirect: "follow",
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(25000),
       });
-      if (!res.ok) {
+      const contentType = res.headers.get("content-type") ?? "";
+      const body = (await res.text()).slice(0, 600000);
+      return { ok: res.ok, status: res.status, contentType, body };
+    };
+
+    const BROWSER_UA = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 ${BOT_UA}`;
+
+    let html = "";
+    let pageText = "";
+    let lastStatus: number | null = null;
+    let lastError = false;
+
+    for (const ua of [BOT_UA, BROWSER_UA]) {
+      try {
+        const result = await attempt(ua);
+        lastStatus = result.status;
+        if (!result.ok) continue;
+        if (result.contentType && !/html|xml|text\/plain/i.test(result.contentType)) {
+          return saveScan(
+            "failed",
+            "That address doesn't return a web page we can review.",
+            null,
+            [],
+          );
+        }
+        const candidate = buildPageText(result.body);
+        if (candidate.length > pageText.length) {
+          html = result.body;
+          pageText = candidate;
+        }
+        if (pageText.length >= 400) break;
+      } catch {
+        lastError = true;
+      }
+    }
+
+    if (!html) {
+      if (lastStatus && !lastError) {
         return saveScan(
           "failed",
-          `We couldn't load the page. The site responded with status ${res.status} and may be blocking automated visitors.`,
+          `We couldn't load the page. The site responded with status ${lastStatus} and may be blocking automated visitors.`,
           null,
           [],
         );
       }
-      const contentType = res.headers.get("content-type") ?? "";
-      if (!contentType.includes("html")) {
-        return saveScan("failed", "That address doesn't return a web page we can review.", null, []);
-      }
-      html = (await res.text()).slice(0, 600000);
-    } catch {
       return saveScan(
         "failed",
         "We couldn't reach that page. It timed out or refused the request.",
@@ -510,11 +540,10 @@ export const runAudit = createServerFn({ method: "POST" })
       );
     }
 
-    const pageText = htmlToText(html).slice(0, 30000);
-    if (pageText.length < 100) {
+    if (pageText.length < 40) {
       return saveScan(
         "failed",
-        "The page loaded but contained almost no readable text, so there was nothing to review.",
+        "The page loaded but returned no readable content, most likely because it renders entirely in the browser and blocks direct requests.",
         null,
         [],
       );
