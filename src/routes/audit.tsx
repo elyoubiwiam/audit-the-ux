@@ -154,6 +154,11 @@ function AuditForm() {
         <p className="mt-3 text-base text-muted-foreground">
           Three quick details and we can start.
         </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {limitReached
+            ? "You've used all 3 audits for today. Come back tomorrow."
+            : `${remaining} of ${DAILY_LIMIT} audits left today.`}
+        </p>
 
         <form onSubmit={handleSubmit} className="mt-10 space-y-6" noValidate>
           <div>
