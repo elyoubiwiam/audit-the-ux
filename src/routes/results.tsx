@@ -124,36 +124,40 @@ function Results() {
           </div>
         ) : (
           <>
-            <h2 className="mt-12 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Techniques identified
-            </h2>
-            <ul className="mt-4 space-y-4">
-              {findings.map((finding) => (
-                <li
-                  key={finding.id}
-                  className="rounded-2xl border border-border bg-card p-5 shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <h3 className="text-base font-semibold text-foreground">{finding.title}</h3>
-                    <span
-                      className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                        categoryStyles[finding.category] ?? "bg-primary/10 text-primary border-primary/20"
-                      }`}
+            {orderedGroups.map(([category, items]) => (
+              <section key={category} className="mt-12">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  {category}
+                </h2>
+                <ul className="mt-4 space-y-4">
+                  {items.map((finding) => (
+                    <li
+                      key={finding.id}
+                      className="rounded-2xl border border-border bg-card p-5 shadow-sm"
                     >
-                      {finding.category}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {finding.explanation}
-                  </p>
-                  {finding.note && (
-                    <p className="mt-2 text-sm italic leading-relaxed text-muted-foreground/80">
-                      {finding.note}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
+                      <div className="flex items-start justify-between gap-4">
+                        <h3 className="text-base font-semibold text-foreground">{finding.title}</h3>
+                        <span
+                          className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                            categoryStyles[finding.category] ?? "bg-primary/10 text-primary border-primary/20"
+                          }`}
+                        >
+                          {finding.category}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        {finding.explanation}
+                      </p>
+                      {finding.note && (
+                        <p className="mt-2 text-sm italic leading-relaxed text-muted-foreground/80">
+                          {finding.note}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
           </>
         )}
 
