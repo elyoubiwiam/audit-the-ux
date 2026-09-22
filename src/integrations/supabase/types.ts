@@ -16,27 +16,30 @@ export type Database = {
     Tables: {
       audit_findings: {
         Row: {
+          category: string | null
           created_at: string
           explanation: string
           id: string
+          note: string | null
           scan_id: string
-          severity: Database["public"]["Enums"]["finding_severity"]
           title: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           explanation: string
           id?: string
+          note?: string | null
           scan_id: string
-          severity: Database["public"]["Enums"]["finding_severity"]
           title: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           explanation?: string
           id?: string
+          note?: string | null
           scan_id?: string
-          severity?: Database["public"]["Enums"]["finding_severity"]
           title?: string
         }
         Relationships: [

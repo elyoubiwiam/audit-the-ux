@@ -9,11 +9,23 @@ const AuditInput = z.object({
   description: z.string().trim().min(1).max(500),
 });
 
+export const CATEGORIES = [
+  "Urgency & scarcity",
+  "Social proof",
+  "Authority & trust",
+  "Risk reversal",
+  "Anchoring & pricing psychology",
+  "CTA design & friction reduction",
+  "Storytelling & emotional framing",
+  "Personalization & specificity",
+] as const;
+
 export type AuditFinding = {
   id: string;
   title: string;
-  severity: "low" | "medium" | "high";
+  category: (typeof CATEGORIES)[number];
   explanation: string;
+  note: string | null;
 };
 
 export type AuditResult = {
