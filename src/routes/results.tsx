@@ -5,7 +5,13 @@ import {
   BadgeCheck,
   BookOpen,
   CheckCircle2,
+  Download,
+  Eye,
+  Gift,
+  Layers,
   MousePointerClick,
+  Repeat,
+  Scale,
   ShieldAlert,
   ShieldCheck,
   Sparkles,
@@ -13,6 +19,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { useEffect } from "react";
 import { z } from "zod";
 
 import { getAudit } from "@/lib/audit.functions";
@@ -27,12 +34,12 @@ export const Route = createFileRoute("/results")({
   loader: async ({ deps }) => (deps.scan ? getAudit({ data: { scanId: deps.scan } }) : null),
   head: () => ({
     meta: [
-      { title: "Your persuasion analysis — UX Audit" },
+      { title: "Your persuasion analysis | UX Audit" },
       {
         name: "description",
         content: "The persuasion and conversion techniques identified on your page.",
       },
-      { property: "og:title", content: "Your persuasion analysis — UX Audit" },
+      { property: "og:title", content: "Your persuasion analysis | UX Audit" },
       {
         property: "og:description",
         content: "The persuasion and conversion techniques identified on your page.",
@@ -54,6 +61,11 @@ const categoryIcons: Record<string, LucideIcon> = {
   "CTA design & friction reduction": MousePointerClick,
   "Storytelling & emotional framing": BookOpen,
   "Personalization & specificity": Sparkles,
+  "Cognitive load & friction": Layers,
+  "Attention & visual hierarchy": Eye,
+  "Commitment & consistency": Repeat,
+  Reciprocity: Gift,
+  "Loss aversion & framing": Scale,
 };
 
 const categoryStyles: Record<string, string> = {
@@ -65,10 +77,37 @@ const categoryStyles: Record<string, string> = {
   "CTA design & friction reduction": "bg-rose-500/10 text-rose-700 border-rose-500/20",
   "Storytelling & emotional framing": "bg-amber-500/10 text-amber-700 border-amber-500/20",
   "Personalization & specificity": "bg-cyan-500/10 text-cyan-700 border-cyan-500/20",
+  "Cognitive load & friction": "bg-slate-500/10 text-slate-700 border-slate-500/20",
+  "Attention & visual hierarchy": "bg-indigo-500/10 text-indigo-700 border-indigo-500/20",
+  "Commitment & consistency": "bg-lime-600/10 text-lime-700 border-lime-600/20",
+  Reciprocity: "bg-pink-500/10 text-pink-700 border-pink-500/20",
+  "Loss aversion & framing": "bg-red-500/10 text-red-700 border-red-500/20",
 };
+
+function slugifyUrl(raw: string) {
+  try {
+    const host = new URL(raw).hostname.replace(/^www\./, "");
+    return host.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  } catch {
+    return "report";
+  }
+}
 
 function Results() {
   const audit = Route.useLoaderData();
+
+  const docName = audit
+    ? `ux-audit-${slugifyUrl(audit.url)}-${new Date(audit.createdAt).toISOString().slice(0, 10)}`
+    : null;
+
+  useEffect(() => {
+    if (!docName) return;
+    const previous = document.title;
+    document.title = docName;
+    return () => {
+      document.title = previous;
+    };
+  }, [docName]);
 
   if (!audit) {
     return (
@@ -85,10 +124,12 @@ function Results() {
     return (
       <Shell
         icon={<ShieldAlert className="h-7 w-7" />}
-        title={audit.status === "blocked" ? "This page can't be scanned" : "We couldn't finish this analysis"}
+        title={
+          audit.status === "blocked" ? "This page can't be scanned" : "We couldn't finish this analysis"
+        }
         body={audit.message ?? "Please try another page."}
         cta="Try another site"
-        subject={`${audit.businessName} — ${audit.url}`}
+        subject={`${audit.businessName} · ${audit.url}`}
       />
     );
   }
@@ -120,7 +161,7 @@ function Results() {
   });
 
   return (
-    <div className="min-h-screen bg-background px-5 py-10 sm:px-6 sm:py-16">
+    <div className="report-page min-h-screen bg-background px-5 py-10 sm:px-6 sm:py-16">
       <main className="mx-auto w-full max-w-2xl">
         <p className="break-words text-sm font-medium text-muted-foreground">
           {audit.businessName} · {audit.url}
@@ -129,9 +170,7 @@ function Results() {
         <h1 className="mt-3 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           What's making this page convincing
         </h1>
-        {countLine && (
-          <p className="mt-4 text-base font-medium text-foreground">{countLine}</p>
-        )}
+        {countLine && <p className="mt-4 text-base font-medium text-foreground">{countLine}</p>}
         {audit.summary && (
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">{audit.summary}</p>
         )}
@@ -171,12 +210,26 @@ function Results() {
                     {items.map((finding) => (
                       <li
                         key={finding.id}
-                        className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5"
+                        className="finding-card rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5"
                       >
-                        <h3 className="text-base font-semibold text-foreground">{finding.title}</h3>
+                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                          <h3 className="text-base font-semibold text-foreground">
+                            {finding.title}
+                          </h3>
+                          {finding.principle && (
+                            <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                              {finding.principle}
+                            </span>
+                          )}
+                        </div>
                         <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                           {finding.explanation}
                         </p>
+                        {finding.evidence && (
+                          <p className="mt-2 border-l-2 border-border pl-3 text-sm leading-relaxed text-foreground/80">
+                            "{finding.evidence}"
+                          </p>
+                        )}
                         {finding.note && (
                           <p className="mt-2 text-sm italic leading-relaxed text-muted-foreground/80">
                             {finding.note}
@@ -191,13 +244,23 @@ function Results() {
           </>
         )}
 
-        <Link
-          to="/audit"
-          className="mt-10 inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-base font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 sm:mt-12"
-        >
-          Run another scan
-          <ArrowRight className="h-4 w-4" />
-        </Link>
+        <div className="no-print mt-10 flex flex-wrap items-center gap-3 sm:mt-12">
+          <Link
+            to="/audit"
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-base font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90"
+          >
+            Run another scan
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            <Download className="h-4 w-4" />
+            Download PDF
+          </button>
+        </div>
       </main>
     </div>
   );
@@ -222,7 +285,7 @@ function Shell({
         <div className="mx-auto mb-6 inline-flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-foreground">
           {icon}
         </div>
-        {subject && <p className="mb-3 text-sm text-muted-foreground">{subject}</p>}
+        {subject && <p className="mb-3 break-words text-sm text-muted-foreground">{subject}</p>}
         <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{title}</h1>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">{body}</p>
         <Link
@@ -236,4 +299,3 @@ function Shell({
     </div>
   );
 }
-
