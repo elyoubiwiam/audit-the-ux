@@ -220,8 +220,9 @@ async function analyze(args: {
       summary: output.summary.slice(0, 1000),
       findings: output.findings.slice(0, 12).map((f) => ({
         title: f.title.slice(0, 120),
-        severity: f.severity,
+        category: f.category,
         explanation: f.explanation.slice(0, 600),
+        note: f.note ? f.note.slice(0, 300) : null,
       })),
     };
   } catch (error) {
@@ -249,7 +250,7 @@ export const runAudit = createServerFn({ method: "POST" })
       status: "completed" | "blocked" | "failed",
       message: string | null,
       summary: string | null,
-      findings: { title: string; severity: "low" | "medium" | "high"; explanation: string }[],
+      findings: { title: string; category: AuditFinding["category"]; explanation: string; note: string | null }[],
     ): Promise<AuditResult> => {
       const { data: scan, error } = await supabaseAdmin
         .from("audit_scans")
