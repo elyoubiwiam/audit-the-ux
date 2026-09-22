@@ -271,7 +271,7 @@ export const runAudit = createServerFn({ method: "POST" })
         const { data: rows, error: findingsError } = await supabaseAdmin
           .from("audit_findings")
           .insert(findings.map((f) => ({ ...f, scan_id: scan.id })))
-          .select("id, title, severity, explanation");
+          .select("id, title, category, explanation, note");
         if (findingsError) throw new Error("We couldn't save the audit findings.");
         saved = (rows ?? []) as AuditFinding[];
       }
@@ -383,9 +383,9 @@ export const getAudit = createServerFn({ method: "GET" })
 
     const { data: findings } = await supabaseAdmin
       .from("audit_findings")
-      .select("id, title, severity, explanation")
+      .select("id, title, category, explanation, note")
       .eq("scan_id", scan.id)
-      .order("severity", { ascending: false });
+      .order("created_at", { ascending: true });
 
     return {
       scanId: scan.id,
