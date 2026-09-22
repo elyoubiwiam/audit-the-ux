@@ -169,5 +169,3 @@ function Shell({
   );
 }
 
-// Keeps the unused-icon lint quiet if severity styling changes later.
-void AlertTriangle;
