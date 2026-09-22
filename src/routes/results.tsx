@@ -116,7 +116,7 @@ function Results() {
         ) : (
           <>
             <h2 className="mt-12 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {findings.length} issue{findings.length === 1 ? "" : "s"} found
+              Findings
             </h2>
             <ul className="mt-4 space-y-4">
               {findings.map((finding) => (
@@ -147,7 +147,7 @@ function Results() {
           to="/audit"
           className="mt-12 inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-base font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90"
         >
-          Audit another site
+          Run another scan
           <ArrowRight className="h-4 w-4" />
         </Link>
       </main>
