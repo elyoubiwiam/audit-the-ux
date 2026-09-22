@@ -50,9 +50,9 @@ function Results() {
     return (
       <Shell
         icon={<CheckCircle2 className="h-7 w-7" />}
-        title="No audit requested yet"
-        body="Start a new audit and we'll review your website's usability and ethics."
-        cta="Start an audit"
+        title="No analysis requested yet"
+        body="Start a new scan and we'll break down the persuasion techniques on your website."
+        cta="Start an analysis"
       />
     );
   }
@@ -61,7 +61,7 @@ function Results() {
     return (
       <Shell
         icon={<ShieldAlert className="h-7 w-7" />}
-        title={audit.status === "blocked" ? "This page can't be scanned" : "We couldn't finish this audit"}
+        title={audit.status === "blocked" ? "This page can't be scanned" : "We couldn't finish this analysis"}
         body={audit.message ?? "Please try another page."}
         cta="Try another site"
         subject={`${audit.businessName} — ${audit.url}`}
@@ -69,9 +69,7 @@ function Results() {
     );
   }
 
-  const findings = [...audit.findings].sort(
-    (a, b) => (severityRank[a.severity] ?? 3) - (severityRank[b.severity] ?? 3),
-  );
+  const findings = audit.findings;
 
   const scanDate = new Date(audit.createdAt).toLocaleDateString("en-US", {
     year: "numeric",
@@ -79,14 +77,9 @@ function Results() {
     day: "numeric",
   });
 
-  const counts = (["high", "medium", "low"] as const)
-    .map((sev) => ({ sev, n: findings.filter((f) => f.severity === sev).length }))
-    .filter(({ n }) => n > 0);
   const countLine =
-    counts.length > 0
-      ? `${findings.length} issue${findings.length === 1 ? "" : "s"} found — ${counts
-          .map(({ sev, n }) => `${n} ${sev}`)
-          .join(", ")}.`
+    findings.length > 0
+      ? `${findings.length} persuasion technique${findings.length === 1 ? "" : "s"} identified on this page.`
       : null;
 
   return (
