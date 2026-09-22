@@ -683,10 +683,14 @@ export const runAudit = createServerFn({ method: "POST" })
         signals: extractSignals(html),
         businessName: data.businessName,
         description: data.description,
-        url: target.toString(),
+        url: usedHomepage ? `${origin}/` : target.toString(),
         apiKey,
       });
-      return saveScan("completed", null, analysis.summary, analysis.findings);
+      const summary = usedHomepage
+        ? `The page you entered refused our request, so this report covers the home page at ${origin}. ${analysis.summary ?? ""}`.trim()
+        : analysis.summary;
+      return saveScan("completed", null, summary, analysis.findings);
+
     } catch (error) {
       const raw = error instanceof Error ? error.message : "";
       const rateLimited = /429|rate/i.test(raw);
