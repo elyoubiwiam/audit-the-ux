@@ -14,15 +14,15 @@ export const Route = createFileRoute("/results")({
   loader: async ({ deps }) => (deps.scan ? getAudit({ data: { scanId: deps.scan } }) : null),
   head: () => ({
     meta: [
-      { title: "Your UX audit report — UX Audit" },
+      { title: "Your persuasion analysis — UX Audit" },
       {
         name: "description",
-        content: "Your ethical UX audit report, with issues ranked by severity.",
+        content: "The persuasion and conversion techniques identified on your page.",
       },
-      { property: "og:title", content: "Your UX audit report — UX Audit" },
+      { property: "og:title", content: "Your persuasion analysis — UX Audit" },
       {
         property: "og:description",
-        content: "Your ethical UX audit report, with issues ranked by severity.",
+        content: "The persuasion and conversion techniques identified on your page.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -32,13 +32,16 @@ export const Route = createFileRoute("/results")({
   component: Results,
 });
 
-const severityStyles: Record<string, string> = {
-  high: "bg-destructive/10 text-destructive border-destructive/20",
-  medium: "bg-amber-500/10 text-amber-700 border-amber-500/20",
-  low: "bg-primary/10 text-primary border-primary/20",
+const categoryStyles: Record<string, string> = {
+  "Urgency & scarcity": "bg-orange-500/10 text-orange-700 border-orange-500/20",
+  "Social proof": "bg-sky-500/10 text-sky-700 border-sky-500/20",
+  "Authority & trust": "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+  "Risk reversal": "bg-teal-500/10 text-teal-700 border-teal-500/20",
+  "Anchoring & pricing psychology": "bg-violet-500/10 text-violet-700 border-violet-500/20",
+  "CTA design & friction reduction": "bg-rose-500/10 text-rose-700 border-rose-500/20",
+  "Storytelling & emotional framing": "bg-amber-500/10 text-amber-700 border-amber-500/20",
+  "Personalization & specificity": "bg-cyan-500/10 text-cyan-700 border-cyan-500/20",
 };
-
-const severityRank: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
 function Results() {
   const audit = Route.useLoaderData();
