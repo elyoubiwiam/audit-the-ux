@@ -1,8 +1,38 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
+
+const DAILY_LIMIT = 3;
+const USAGE_KEY = "ux-audit-usage";
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function readUsedToday(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const raw = window.localStorage.getItem(USAGE_KEY);
+    if (!raw) return 0;
+    const parsed = JSON.parse(raw) as { day?: string; count?: number };
+    return parsed.day === todayKey() ? (parsed.count ?? 0) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function recordUse() {
+  try {
+    window.localStorage.setItem(
+      USAGE_KEY,
+      JSON.stringify({ day: todayKey(), count: readUsedToday() + 1 }),
+    );
+  } catch {
+    /* storage unavailable */
+  }
+}
 
 import { runAudit } from "@/lib/audit.functions";
 
