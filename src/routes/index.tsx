@@ -68,7 +68,7 @@ const useCases = [
 function Index() {
   return (
     <div className="min-h-screen bg-background">
-      <header className="mx-auto flex max-w-4xl items-center justify-between px-6 py-6">
+      <header className="mx-auto flex max-w-4xl items-center justify-between px-5 py-5 sm:px-6 sm:py-6">
         <span className="text-lg font-semibold tracking-tight text-foreground">UX Audit</span>
         <Link
           to="/audit"
@@ -78,8 +78,8 @@ function Index() {
         </Link>
       </header>
 
-      <main className="mx-auto max-w-4xl px-6">
-        <section className="py-16 text-center sm:py-24">
+      <main className="mx-auto max-w-4xl px-5 sm:px-6">
+        <section className="py-12 text-center sm:py-24">
           <p className="mb-4 text-sm font-medium uppercase tracking-widest text-primary">
             For founders and marketers
           </p>
@@ -100,7 +100,7 @@ function Index() {
           <p className="mt-4 text-sm text-muted-foreground">Free to use. No account needed.</p>
         </section>
 
-        <section className="pb-16">
+        <section className="pb-12 sm:pb-16">
           <h2 className="text-center text-2xl font-semibold tracking-tight text-foreground">
             How it works
           </h2>
@@ -123,7 +123,7 @@ function Index() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-border bg-card p-8 pb-10">
+        <section className="rounded-2xl border border-border bg-card p-6 pb-8 sm:p-8 sm:pb-10">
           <h2 className="text-xl font-semibold tracking-tight text-foreground">
             What people use it for
           </h2>
@@ -141,7 +141,7 @@ function Index() {
         </section>
       </main>
 
-      <footer className="mt-16 border-t border-border py-8 text-center text-sm text-muted-foreground">
+      <footer className="mt-12 border-t border-border px-5 py-8 text-center text-sm text-muted-foreground sm:mt-16">
         UX Audit — see what makes a page convincing.
       </footer>
     </div>

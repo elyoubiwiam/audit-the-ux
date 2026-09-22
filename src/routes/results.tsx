@@ -1,5 +1,18 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, CheckCircle2, ShieldAlert } from "lucide-react";
+import {
+  AlarmClock,
+  ArrowRight,
+  BadgeCheck,
+  BookOpen,
+  CheckCircle2,
+  MousePointerClick,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+  Tag,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { z } from "zod";
 
 import { getAudit } from "@/lib/audit.functions";
@@ -31,6 +44,17 @@ export const Route = createFileRoute("/results")({
   }),
   component: Results,
 });
+
+const categoryIcons: Record<string, LucideIcon> = {
+  "Urgency & scarcity": AlarmClock,
+  "Social proof": Users,
+  "Authority & trust": BadgeCheck,
+  "Risk reversal": ShieldCheck,
+  "Anchoring & pricing psychology": Tag,
+  "CTA design & friction reduction": MousePointerClick,
+  "Storytelling & emotional framing": BookOpen,
+  "Personalization & specificity": Sparkles,
+};
 
 const categoryStyles: Record<string, string> = {
   "Urgency & scarcity": "bg-orange-500/10 text-orange-700 border-orange-500/20",
@@ -96,13 +120,13 @@ function Results() {
   });
 
   return (
-    <div className="min-h-screen bg-background px-6 py-16">
+    <div className="min-h-screen bg-background px-5 py-10 sm:px-6 sm:py-16">
       <main className="mx-auto w-full max-w-2xl">
-        <p className="text-sm font-medium text-muted-foreground">
+        <p className="break-words text-sm font-medium text-muted-foreground">
           {audit.businessName} · {audit.url}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">Scanned on {scanDate}</p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground">
+        <h1 className="mt-3 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           What's making this page convincing
         </h1>
         {countLine && (
@@ -124,46 +148,52 @@ function Results() {
           </div>
         ) : (
           <>
-            {orderedGroups.map(([category, items]) => (
-              <section key={category} className="mt-12">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  {category}
-                </h2>
-                <ul className="mt-4 space-y-4">
-                  {items.map((finding) => (
-                    <li
-                      key={finding.id}
-                      className="rounded-2xl border border-border bg-card p-5 shadow-sm"
+            {orderedGroups.map(([category, items]) => {
+              const Icon = categoryIcons[category] ?? Sparkles;
+              const chip =
+                categoryStyles[category] ?? "bg-primary/10 text-primary border-primary/20";
+              return (
+                <section key={category} className="mt-10 sm:mt-12">
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${chip}`}
                     >
-                      <div className="flex items-start justify-between gap-4">
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
+                    <h2 className="text-xs font-semibold uppercase tracking-widest text-foreground sm:text-sm">
+                      {category}
+                    </h2>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                      {items.length}
+                    </span>
+                  </div>
+                  <ul className="mt-4 space-y-3">
+                    {items.map((finding) => (
+                      <li
+                        key={finding.id}
+                        className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5"
+                      >
                         <h3 className="text-base font-semibold text-foreground">{finding.title}</h3>
-                        <span
-                          className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                            categoryStyles[finding.category] ?? "bg-primary/10 text-primary border-primary/20"
-                          }`}
-                        >
-                          {finding.category}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                        {finding.explanation}
-                      </p>
-                      {finding.note && (
-                        <p className="mt-2 text-sm italic leading-relaxed text-muted-foreground/80">
-                          {finding.note}
+                        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                          {finding.explanation}
                         </p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
+                        {finding.note && (
+                          <p className="mt-2 text-sm italic leading-relaxed text-muted-foreground/80">
+                            {finding.note}
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
           </>
         )}
 
         <Link
           to="/audit"
-          className="mt-12 inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-base font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90"
+          className="mt-10 inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-base font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 sm:mt-12"
         >
           Run another scan
           <ArrowRight className="h-4 w-4" />
@@ -187,13 +217,13 @@ function Shell({
   subject?: string;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6">
+    <div className="flex min-h-screen items-center justify-center bg-background px-5 sm:px-6">
       <main className="w-full max-w-lg text-center">
         <div className="mx-auto mb-6 inline-flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-foreground">
           {icon}
         </div>
         {subject && <p className="mb-3 text-sm text-muted-foreground">{subject}</p>}
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">{title}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{title}</h1>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">{body}</p>
         <Link
           to="/audit"
