@@ -2,6 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   ArrowRight,
   Check,
+  ChevronDown,
   Link2,
   ListChecks,
   ScanSearch,
@@ -65,6 +66,10 @@ const useCases = [
   },
 ];
 
+function scrollToSection(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function Index() {
   return (
     <div className="min-h-screen bg-background">
@@ -78,8 +83,8 @@ function Index() {
         </Link>
       </header>
 
-      <main className="mx-auto max-w-4xl px-5 sm:px-6">
-        <section className="py-12 text-center sm:py-24">
+      <main>
+        <section className="mx-auto max-w-4xl px-5 pb-14 pt-10 text-center sm:px-6 sm:pb-20 sm:pt-20">
           <p className="mb-4 text-sm font-medium uppercase tracking-widest text-primary">
             For founders and marketers
           </p>
@@ -98,50 +103,120 @@ function Index() {
             <ArrowRight className="h-4 w-4" />
           </Link>
           <p className="mt-4 text-sm text-muted-foreground">Free to use. No account needed.</p>
+
+          <button
+            type="button"
+            onClick={() => scrollToSection("how-it-works")}
+            className="mx-auto mt-12 flex flex-col items-center gap-1 text-xs font-medium uppercase tracking-widest text-muted-foreground transition-colors hover:text-primary"
+          >
+            See how it works
+            <ChevronDown className="h-5 w-5 animate-bounce" />
+          </button>
         </section>
 
-        <section className="pb-12 sm:pb-16">
-          <h2 className="text-center text-2xl font-semibold tracking-tight text-foreground">
-            How it works
-          </h2>
-          <div className="mt-8 grid gap-6 sm:grid-cols-3">
-            {steps.map((step, i) => (
-              <div
-                key={step.title}
-                className="rounded-2xl border border-border bg-card p-6 text-left"
+        <section
+          id="how-it-works"
+          className="scroll-mt-8 border-y border-border bg-secondary py-14 sm:py-20"
+        >
+          <div className="mx-auto max-w-4xl px-5 sm:px-6">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="text-sm font-medium uppercase tracking-widest text-primary">
+                How it works
+              </p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                Three steps, about a minute
+              </h2>
+              <p className="mt-4 text-base text-muted-foreground sm:text-lg">
+                No setup, no plugin, no account. You stay on this page the whole way through.
+              </p>
+            </div>
+
+            <ol className="mt-10 grid gap-6 sm:mt-14 sm:grid-cols-3">
+              {steps.map((step, i) => (
+                <li
+                  key={step.title}
+                  className="relative rounded-2xl border border-border bg-card p-6 text-left"
+                >
+                  <div className="mb-4 flex items-center gap-3">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground">
+                      {i + 1}
+                    </span>
+                    <step.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold tracking-tight text-foreground">
+                    {step.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.text}</p>
+                  {i < steps.length - 1 && (
+                    <span className="absolute -right-4 top-1/2 hidden h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-muted-foreground sm:flex">
+                      <ArrowRight className="h-4 w-4" />
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ol>
+
+            <div className="mt-10 flex flex-col items-center gap-2 border-t border-border/70 pt-8 sm:mt-14">
+              <p className="text-sm text-muted-foreground">
+                Keep scrolling for what people use it for, and where to start.
+              </p>
+              <button
+                type="button"
+                onClick={() => scrollToSection("use-cases")}
+                className="text-muted-foreground transition-colors hover:text-primary"
+                aria-label="Scroll to the next section"
               >
-                <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-accent text-accent-foreground">
-                  <step.icon className="h-5 w-5" />
-                </div>
-                <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                  Step {i + 1}
-                </p>
-                <h3 className="mt-1 text-base font-semibold text-foreground">{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.text}</p>
-              </div>
-            ))}
+                <ChevronDown className="h-5 w-5 animate-bounce" />
+              </button>
+            </div>
           </div>
         </section>
 
-        <section className="rounded-2xl border border-border bg-card p-6 pb-8 sm:p-8 sm:pb-10">
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">
-            What people use it for
-          </h2>
-          <ul className="mt-6 space-y-5">
-            {useCases.map((useCase) => (
-              <li key={useCase.title} className="flex gap-3">
-                <Check className="mt-1 h-4 w-4 shrink-0 text-primary" />
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  <span className="font-semibold text-foreground">{useCase.title}.</span>{" "}
-                  {useCase.text}
-                </p>
-              </li>
-            ))}
-          </ul>
+        <section
+          id="use-cases"
+          className="mx-auto max-w-4xl scroll-mt-8 px-5 py-14 sm:px-6 sm:py-20"
+        >
+          <div className="rounded-2xl border border-border bg-card p-6 pb-8 sm:p-8 sm:pb-10">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              What people use it for
+            </h2>
+            <ul className="mt-6 space-y-5">
+              {useCases.map((useCase) => (
+                <li key={useCase.title} className="flex gap-3">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-primary" />
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    <span className="font-semibold text-foreground">{useCase.title}.</span>{" "}
+                    {useCase.text}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-4xl px-5 pb-14 sm:px-6 sm:pb-20">
+          <div className="rounded-3xl border border-border bg-secondary px-6 py-10 text-center sm:px-10 sm:py-14">
+            <h2 className="mx-auto max-w-lg text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              Ready to see what's working on your page?
+            </h2>
+            <p className="mx-auto mt-4 max-w-md text-base text-muted-foreground">
+              Drop in a URL and get the full breakdown in under a minute.
+            </p>
+            <Link
+              to="/audit"
+              className="mt-8 inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3.5 text-base font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md"
+            >
+              Start now
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Free to use. No account needed.
+            </p>
+          </div>
         </section>
       </main>
 
-      <footer className="mt-12 border-t border-border px-5 py-8 text-center text-sm text-muted-foreground sm:mt-16">
+      <footer className="border-t border-border px-5 py-8 text-center text-sm text-muted-foreground">
         UX Audit. See what makes a page convincing.
       </footer>
     </div>
