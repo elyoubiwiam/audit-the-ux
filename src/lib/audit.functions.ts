@@ -510,45 +510,120 @@ export const runAudit = createServerFn({ method: "POST" })
       );
     }
 
-    const attempt = async (ua: string) => {
-      const res = await fetch(target.toString(), {
-        headers: {
-          "User-Agent": ua,
-          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.9,*;q=0.5",
-        },
+    const DESKTOP_UA =
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+    const MOBILE_UA =
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1";
+
+    const browserHeaders = (ua: string, origin: string) => ({
+      "User-Agent": ua,
+      Accept:
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Upgrade-Insecure-Requests": "1",
+      "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+      "sec-ch-ua-mobile": ua === MOBILE_UA ? "?1" : "?0",
+      "sec-ch-ua-platform": ua === MOBILE_UA ? '"iOS"' : '"macOS"',
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "same-origin",
+      "Sec-Fetch-User": "?1",
+      Referer: `${origin}/`,
+      Referrer: `${origin}/`,
+      "Cache-Control": "max-age=0",
+    });
+
+    type Attempt = {
+      ok: boolean;
+      status: number;
+      contentType: string;
+      body: string;
+      isText?: boolean;
+    };
+
+    const fetchAs = async (url: string, ua: string, origin: string): Promise<Attempt> => {
+      const res = await fetch(url, {
+        headers: browserHeaders(ua, origin),
         redirect: "follow",
         signal: AbortSignal.timeout(25000),
       });
-      const contentType = res.headers.get("content-type") ?? "";
-      const body = (await res.text()).slice(0, 600000);
-      return { ok: res.ok, status: res.status, contentType, body };
+      return {
+        ok: res.ok,
+        status: res.status,
+        contentType: res.headers.get("content-type") ?? "",
+        body: (await res.text()).slice(0, 600000),
+      };
     };
 
-    const BROWSER_UA = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 ${BOT_UA}`;
+    const readerFetch = async (url: string): Promise<Attempt> => {
+      const res = await fetch(`https://r.jina.ai/${url}`, {
+        headers: { "User-Agent": DESKTOP_UA, Accept: "text/plain,*/*" },
+        redirect: "follow",
+        signal: AbortSignal.timeout(25000),
+      });
+      return {
+        ok: res.ok,
+        status: res.status,
+        contentType: res.headers.get("content-type") ?? "",
+        body: (await res.text()).slice(0, 600000),
+        isText: true,
+      };
+    };
+
+    const origin = target.origin;
+    const pageUrl = target.toString();
+    const isDeepLink = target.pathname !== "/" || !!target.search;
+
+    const strategies: { label: string; homepage?: boolean; run: () => Promise<Attempt> }[] = [
+      { label: "desktop", run: () => fetchAs(pageUrl, DESKTOP_UA, origin) },
+      { label: "mobile", run: () => fetchAs(pageUrl, MOBILE_UA, origin) },
+      { label: "reader", run: () => readerFetch(pageUrl) },
+      ...(isDeepLink
+        ? [
+            {
+              label: "homepage",
+              homepage: true,
+              run: () => fetchAs(`${origin}/`, DESKTOP_UA, origin),
+            },
+          ]
+        : []),
+    ];
 
     let html = "";
     let pageText = "";
+    let usedHomepage = false;
     let lastStatus: number | null = null;
+    let refused = false;
     let lastError = false;
+    let nonHtml = false;
+    let gotAny = false;
 
-    for (const ua of [BOT_UA, BROWSER_UA]) {
+    for (const [index, strategy] of strategies.entries()) {
+      if (index > 0) await new Promise((r) => setTimeout(r, 400));
       try {
-        const result = await attempt(ua);
+        const result = await strategy.run();
         lastStatus = result.status;
-        if (!result.ok) continue;
-        if (result.contentType && !/html|xml|text\/plain/i.test(result.contentType)) {
-          return saveScan(
-            "failed",
-            "That address doesn't return a web page we can review.",
-            null,
-            [],
-          );
+        if (!result.ok) {
+          if (result.status === 403 || result.status === 429 || result.status === 401) {
+            refused = true;
+          }
+          continue;
         }
-        const candidate = buildPageText(result.body);
+        if (
+          !result.isText &&
+          result.contentType &&
+          !/html|xml|text\/plain/i.test(result.contentType)
+        ) {
+          nonHtml = true;
+          continue;
+        }
+        gotAny = true;
+        const candidate = result.isText ? result.body.trim() : buildPageText(result.body);
         if (candidate.length > pageText.length) {
-          html = result.body;
+          html = result.isText ? "" : result.body;
           pageText = candidate;
+          usedHomepage = !!strategy.homepage;
         }
         if (pageText.length >= 400) break;
       } catch {
@@ -556,11 +631,27 @@ export const runAudit = createServerFn({ method: "POST" })
       }
     }
 
-    if (!html) {
+    if (!gotAny) {
+      if (nonHtml && !refused) {
+        return saveScan(
+          "failed",
+          "That address doesn't return a web page we can review.",
+          null,
+          [],
+        );
+      }
+      if (refused) {
+        return saveScan(
+          "failed",
+          "The site refused our request. It blocks visitors it doesn't recognise, so try another page on the same site.",
+          null,
+          [],
+        );
+      }
       if (lastStatus && !lastError) {
         return saveScan(
           "failed",
-          `We couldn't load the page. The site responded with status ${lastStatus} and may be blocking automated visitors.`,
+          `We couldn't load the page. The site responded with status ${lastStatus}.`,
           null,
           [],
         );
@@ -581,6 +672,7 @@ export const runAudit = createServerFn({ method: "POST" })
         [],
       );
     }
+
 
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) throw new Error("The analysis service isn't configured yet.");
