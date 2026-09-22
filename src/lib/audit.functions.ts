@@ -120,7 +120,7 @@ function htmlToText(html: string) {
     .trim();
 }
 
-/** Signals that survive tag-stripping but matter for dark patterns. */
+/** Signals that survive tag-stripping but matter for persuasion analysis. */
 function extractSignals(html: string) {
   const buttons = [...html.matchAll(/<(button|a)\b[^>]*>([\s\S]{0,120}?)<\/\1>/gi)]
     .map((m) => htmlToText(m[2] ?? ""))
