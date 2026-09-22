@@ -252,14 +252,15 @@ function Results() {
             Run another scan
             <ArrowRight className="h-4 w-4" />
           </Link>
-          <button
-            type="button"
-            onClick={() => window.print()}
+          <a
+            href={`/api/public/report/${audit.scanId}.pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent"
           >
             <Download className="h-4 w-4" />
-            Download PDF
-          </button>
+            Open PDF
+          </a>
         </div>
       </main>
     </div>
