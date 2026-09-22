@@ -14,7 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_findings: {
+        Row: {
+          created_at: string
+          explanation: string
+          id: string
+          scan_id: string
+          severity: Database["public"]["Enums"]["finding_severity"]
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          explanation: string
+          id?: string
+          scan_id: string
+          severity: Database["public"]["Enums"]["finding_severity"]
+          title: string
+        }
+        Update: {
+          created_at?: string
+          explanation?: string
+          id?: string
+          scan_id?: string
+          severity?: Database["public"]["Enums"]["finding_severity"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_findings_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "audit_scans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_scans: {
+        Row: {
+          business_description: string
+          business_name: string
+          created_at: string
+          id: string
+          message: string | null
+          status: Database["public"]["Enums"]["audit_status"]
+          summary: string | null
+          url: string
+        }
+        Insert: {
+          business_description?: string
+          business_name: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          status?: Database["public"]["Enums"]["audit_status"]
+          summary?: string | null
+          url: string
+        }
+        Update: {
+          business_description?: string
+          business_name?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          status?: Database["public"]["Enums"]["audit_status"]
+          summary?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +90,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      audit_status: "completed" | "blocked" | "failed"
+      finding_severity: "low" | "medium" | "high"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +218,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      audit_status: ["completed", "blocked", "failed"],
+      finding_severity: ["low", "medium", "high"],
+    },
   },
 } as const
