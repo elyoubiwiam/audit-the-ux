@@ -68,7 +68,7 @@ const useCases = [
 function Index() {
   return (
     <div className="min-h-screen bg-background">
-      <header className="mx-auto flex max-w-4xl items-center justify-between px-6 py-6">
+      <header className="mx-auto flex max-w-4xl items-center justify-between px-5 py-5 sm:px-6 sm:py-6">
         <span className="text-lg font-semibold tracking-tight text-foreground">UX Audit</span>
         <Link
           to="/audit"
