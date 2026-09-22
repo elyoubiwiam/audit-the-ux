@@ -4,7 +4,7 @@ import { z } from "zod";
 const BOT_UA = "UXAuditBot/1.0 (+https://uxaudit.lovable.app/about-bot)";
 
 const AuditInput = z.object({
-  url: z.string().trim().min(1).max(200),
+  url: z.string().trim().min(1).max(2000),
   businessName: z.string().trim().min(1).max(100),
   description: z.string().trim().min(1).max(500),
 });
