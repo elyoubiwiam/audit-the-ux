@@ -557,7 +557,9 @@ export const runAudit = createServerFn({ method: "POST" })
     };
 
     const readerFetch = async (url: string): Promise<Attempt> => {
-      const res = await fetch(`https://r.jina.ai/${url}`, {
+      // Cache-busting param: the shared reader cache returns 403 for repeat hits.
+      const sep = url.includes("?") ? "&" : "?";
+      const res = await fetch(`https://r.jina.ai/${url}${sep}uxa=${Date.now()}`, {
         headers: { "User-Agent": DESKTOP_UA, Accept: "text/plain,*/*" },
         redirect: "follow",
         signal: AbortSignal.timeout(25000),
