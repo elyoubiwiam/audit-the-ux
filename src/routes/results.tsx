@@ -148,46 +148,52 @@ function Results() {
           </div>
         ) : (
           <>
-            {orderedGroups.map(([category, items]) => (
-              <section key={category} className="mt-12">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  {category}
-                </h2>
-                <ul className="mt-4 space-y-4">
-                  {items.map((finding) => (
-                    <li
-                      key={finding.id}
-                      className="rounded-2xl border border-border bg-card p-5 shadow-sm"
+            {orderedGroups.map(([category, items]) => {
+              const Icon = categoryIcons[category] ?? Sparkles;
+              const chip =
+                categoryStyles[category] ?? "bg-primary/10 text-primary border-primary/20";
+              return (
+                <section key={category} className="mt-10 sm:mt-12">
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${chip}`}
                     >
-                      <div className="flex items-start justify-between gap-4">
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
+                    <h2 className="text-xs font-semibold uppercase tracking-widest text-foreground sm:text-sm">
+                      {category}
+                    </h2>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                      {items.length}
+                    </span>
+                  </div>
+                  <ul className="mt-4 space-y-3">
+                    {items.map((finding) => (
+                      <li
+                        key={finding.id}
+                        className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5"
+                      >
                         <h3 className="text-base font-semibold text-foreground">{finding.title}</h3>
-                        <span
-                          className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                            categoryStyles[finding.category] ?? "bg-primary/10 text-primary border-primary/20"
-                          }`}
-                        >
-                          {finding.category}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                        {finding.explanation}
-                      </p>
-                      {finding.note && (
-                        <p className="mt-2 text-sm italic leading-relaxed text-muted-foreground/80">
-                          {finding.note}
+                        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                          {finding.explanation}
                         </p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
+                        {finding.note && (
+                          <p className="mt-2 text-sm italic leading-relaxed text-muted-foreground/80">
+                            {finding.note}
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
           </>
         )}
 
         <Link
           to="/audit"
-          className="mt-12 inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-base font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90"
+          className="mt-10 inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-base font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 sm:mt-12"
         >
           Run another scan
           <ArrowRight className="h-4 w-4" />
