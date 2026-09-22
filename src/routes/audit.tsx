@@ -52,13 +52,15 @@ type FormErrors = Partial<Record<keyof z.infer<typeof formSchema>, string>>;
 
 function AuditForm() {
   const navigate = useNavigate();
+  const audit = useServerFn(runAudit);
   const [url, setUrl] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const result = formSchema.safeParse({ url, businessName, description });
     if (!result.success) {
@@ -71,17 +73,19 @@ function AuditForm() {
       return;
     }
     setErrors({});
+    setSubmitError(null);
     setLoading(true);
-    // Simulated analysis — replaced by the real audit call in the next round.
-    window.setTimeout(() => {
-      navigate({
-        to: "/results",
-        search: {
-          url: result.data.url,
-          business: result.data.businessName,
-        },
-      });
-    }, 2200);
+    try {
+      const scan = await audit({ data: result.data });
+      await navigate({ to: "/results", search: { scan: scan.scanId } });
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error && error.message
+          ? error.message
+          : "Something went wrong. Please try again.",
+      );
+      setLoading(false);
+    }
   };
 
   const inputClass =
