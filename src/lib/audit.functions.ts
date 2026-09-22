@@ -154,6 +154,70 @@ function extractSignals(html: string) {
   };
 }
 
+/**
+ * Text that survives on JS-rendered pages: title, meta/OG tags, JSON-LD,
+ * noscript blocks, image alt text, aria labels, headings and button copy.
+ */
+function extractFallbackText(html: string) {
+  const parts: string[] = [];
+
+  const title = html.match(/<title\b[^>]*>([\s\S]{0,300}?)<\/title>/i);
+  if (title) parts.push(htmlToText(title[1] ?? ""));
+
+  for (const m of html.matchAll(/<meta\b[^>]*>/gi)) {
+    const tag = m[0];
+    if (!/name=["']?(description|twitter:[\w:-]+)|property=["']?og:[\w:-]+/i.test(tag)) continue;
+    const content = tag.match(/content=["']([\s\S]*?)["']/i);
+    if (content?.[1]) parts.push(htmlToText(content[1]));
+  }
+
+  for (const m of html.matchAll(
+    /<script\b[^>]*type=["']application\/(ld\+json|json)["'][^>]*>([\s\S]*?)<\/script>/gi,
+  )) {
+    const raw = m[2] ?? "";
+    for (const s of raw.matchAll(/"(?:[^"\\]|\\.){3,300}"/g)) {
+      const v = s[0].slice(1, -1);
+      if (/[a-zA-Z]{3,}\s/.test(v) && !/^https?:|^\//.test(v)) parts.push(v);
+    }
+  }
+
+  for (const m of html.matchAll(/<noscript\b[^>]*>([\s\S]*?)<\/noscript>/gi)) {
+    parts.push(htmlToText(m[1] ?? ""));
+  }
+
+  for (const m of html.matchAll(/\b(alt|aria-label|placeholder|title)=["']([^"']{3,200})["']/gi)) {
+    parts.push(htmlToText(m[2] ?? ""));
+  }
+
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const p of parts) {
+    const t = p.trim();
+    if (t.length < 3 || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out.join(". ");
+}
+
+/** Combines visible text with fallback sources so JS-heavy pages still get reviewed. */
+function buildPageText(html: string) {
+  const visible = htmlToText(html);
+  const signals = extractSignals(html);
+  const extras = [
+    extractFallbackText(html),
+    signals.headings.join(". "),
+    signals.buttons.join(". "),
+  ]
+    .filter(Boolean)
+    .join(". ");
+
+  if (visible.length >= 400) {
+    return `${visible}\n\nPage metadata, headings and button labels: ${extras}`.slice(0, 30000);
+  }
+  return [visible, extras].filter(Boolean).join("\n\n").slice(0, 30000);
+}
+
 function stripDashes(text: string) {
   return text.replace(/\s*[—–]\s*/g, ", ");
 }
