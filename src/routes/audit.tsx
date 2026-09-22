@@ -117,6 +117,8 @@ function AuditForm() {
     setLoading(true);
     try {
       const scan = await audit({ data: result.data });
+      recordUse();
+      setUsedToday(readUsedToday());
       await navigate({ to: "/results", search: { scan: scan.scanId } });
     } catch (error) {
       setSubmitError(
