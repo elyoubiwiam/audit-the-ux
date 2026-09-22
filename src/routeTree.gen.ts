@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as ResultsRouteImport } from './routes/results'
+import { Route as ApiPublicReportScanIdRouteImport } from './routes/api/public/report.$scanId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +29,44 @@ const ResultsRoute = ResultsRouteImport.update({
   path: '/results',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicReportScanIdRoute = ApiPublicReportScanIdRouteImport.update({
+  id: '/api/public/report/$scanId',
+  path: '/api/public/report/$scanId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
   '/results': typeof ResultsRoute
+  '/api/public/report/$scanId': typeof ApiPublicReportScanIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
   '/results': typeof ResultsRoute
+  '/api/public/report/$scanId': typeof ApiPublicReportScanIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
   '/results': typeof ResultsRoute
+  '/api/public/report/$scanId': typeof ApiPublicReportScanIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/audit' | '/results'
+  fullPaths: '/' | '/audit' | '/results' | '/api/public/report/$scanId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/audit' | '/results'
-  id: '__root__' | '/' | '/audit' | '/results'
+  to: '/' | '/audit' | '/results' | '/api/public/report/$scanId'
+  id: '__root__' | '/' | '/audit' | '/results' | '/api/public/report/$scanId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuditRoute: typeof AuditRoute
   ResultsRoute: typeof ResultsRoute
+  ApiPublicReportScanIdRoute: typeof ApiPublicReportScanIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +92,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResultsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/report/$scanId': {
+      id: '/api/public/report/$scanId'
+      path: '/api/public/report/$scanId'
+      fullPath: '/api/public/report/$scanId'
+      preLoaderRoute: typeof ApiPublicReportScanIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuditRoute: AuditRoute,
   ResultsRoute: ResultsRoute,
+  ApiPublicReportScanIdRoute: ApiPublicReportScanIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
