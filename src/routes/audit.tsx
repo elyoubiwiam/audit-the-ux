@@ -1,7 +1,10 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
+
+import { runAudit } from "@/lib/audit.functions";
 
 export const Route = createFileRoute("/audit")({
   head: () => ({
@@ -49,13 +52,15 @@ type FormErrors = Partial<Record<keyof z.infer<typeof formSchema>, string>>;
 
 function AuditForm() {
   const navigate = useNavigate();
+  const audit = useServerFn(runAudit);
   const [url, setUrl] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const result = formSchema.safeParse({ url, businessName, description });
     if (!result.success) {
@@ -68,17 +73,19 @@ function AuditForm() {
       return;
     }
     setErrors({});
+    setSubmitError(null);
     setLoading(true);
-    // Simulated analysis — replaced by the real audit call in the next round.
-    window.setTimeout(() => {
-      navigate({
-        to: "/results",
-        search: {
-          url: result.data.url,
-          business: result.data.businessName,
-        },
-      });
-    }, 2200);
+    try {
+      const scan = await audit({ data: result.data });
+      await navigate({ to: "/results", search: { scan: scan.scanId } });
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error && error.message
+          ? error.message
+          : "Something went wrong. Please try again.",
+      );
+      setLoading(false);
+    }
   };
 
   const inputClass =
@@ -173,6 +180,18 @@ function AuditForm() {
               "Run my audit"
             )}
           </button>
+
+          {loading && (
+            <p className="text-center text-sm text-muted-foreground">
+              Checking the site's rules, reading the page and reviewing it — this can take up
+              to a minute.
+            </p>
+          )}
+          {submitError && (
+            <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              {submitError}
+            </p>
+          )}
         </form>
       </main>
     </div>
