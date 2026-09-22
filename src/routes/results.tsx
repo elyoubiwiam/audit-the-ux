@@ -90,7 +90,7 @@ function Results() {
         </p>
         <p className="mt-1 text-sm text-muted-foreground">Scanned on {scanDate}</p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground">
-          Your ethical UX audit
+          What's making this page convincing
         </h1>
         {countLine && (
           <p className="mt-4 text-base font-medium text-foreground">{countLine}</p>
@@ -104,15 +104,15 @@ function Results() {
             <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-accent text-accent-foreground">
               <CheckCircle2 className="h-5 w-5" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground">No issues found</h2>
+            <h2 className="text-lg font-semibold text-foreground">No techniques identified</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              We didn't spot any dark patterns or clear UX problems on this page.
+              We didn't spot any recognizable persuasion or conversion techniques on this page.
             </p>
           </div>
         ) : (
           <>
             <h2 className="mt-12 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Findings
+              Techniques identified
             </h2>
             <ul className="mt-4 space-y-4">
               {findings.map((finding) => (
@@ -123,16 +123,21 @@ function Results() {
                   <div className="flex items-start justify-between gap-4">
                     <h3 className="text-base font-semibold text-foreground">{finding.title}</h3>
                     <span
-                      className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${
-                        severityStyles[finding.severity] ?? severityStyles["low"]
+                      className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                        categoryStyles[finding.category] ?? "bg-primary/10 text-primary border-primary/20"
                       }`}
                     >
-                      {finding.severity}
+                      {finding.category}
                     </span>
                   </div>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                     {finding.explanation}
                   </p>
+                  {finding.note && (
+                    <p className="mt-2 text-sm italic leading-relaxed text-muted-foreground/80">
+                      {finding.note}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>
