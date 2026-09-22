@@ -180,6 +180,18 @@ function AuditForm() {
               "Run my audit"
             )}
           </button>
+
+          {loading && (
+            <p className="text-center text-sm text-muted-foreground">
+              Checking the site's rules, reading the page and reviewing it — this can take up
+              to a minute.
+            </p>
+          )}
+          {submitError && (
+            <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              {submitError}
+            </p>
+          )}
         </form>
       </main>
     </div>
