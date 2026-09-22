@@ -70,15 +70,35 @@ function Results() {
     (a, b) => (severityRank[a.severity] ?? 3) - (severityRank[b.severity] ?? 3),
   );
 
+  const scanDate = new Date(audit.createdAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const counts = (["high", "medium", "low"] as const)
+    .map((sev) => ({ sev, n: findings.filter((f) => f.severity === sev).length }))
+    .filter(({ n }) => n > 0);
+  const countLine =
+    counts.length > 0
+      ? `${findings.length} issue${findings.length === 1 ? "" : "s"} found — ${counts
+          .map(({ sev, n }) => `${n} ${sev}`)
+          .join(", ")}.`
+      : null;
+
   return (
     <div className="min-h-screen bg-background px-6 py-16">
       <main className="mx-auto w-full max-w-2xl">
         <p className="text-sm font-medium text-muted-foreground">
           {audit.businessName} · {audit.url}
         </p>
+        <p className="mt-1 text-sm text-muted-foreground">Scanned on {scanDate}</p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground">
           Your ethical UX audit
         </h1>
+        {countLine && (
+          <p className="mt-4 text-base font-medium text-foreground">{countLine}</p>
+        )}
         {audit.summary && (
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">{audit.summary}</p>
         )}
