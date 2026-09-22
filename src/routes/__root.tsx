@@ -77,18 +77,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "UX Audit — Ethical UX audits for your website" },
+      { title: "UX Audit — See what makes a landing page convert" },
       {
         name: "description",
         content:
-          "Get an ethical UX audit of your website. Honest, human-centered feedback on usability and design.",
+          "A plain-language breakdown of the persuasion techniques any landing page uses, and how well each one works.",
       },
       { name: "author", content: "UX Audit" },
-      { property: "og:title", content: "UX Audit — Ethical UX audits for your website" },
+      {
+        property: "og:title",
+        content: "UX Audit — See what makes a landing page convert",
+      },
       {
         property: "og:description",
         content:
-          "Get an ethical UX audit of your website. Honest, human-centered feedback on usability and design.",
+          "A plain-language breakdown of the persuasion techniques any landing page uses, and how well each one works.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

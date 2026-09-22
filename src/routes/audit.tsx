@@ -12,12 +12,13 @@ export const Route = createFileRoute("/audit")({
       { title: "Start your audit — UX Audit" },
       {
         name: "description",
-        content: "Tell us about your website and business to get your ethical UX audit.",
+        content: "Tell us the page and the business so we can break down its persuasion techniques.",
       },
       { property: "og:title", content: "Start your audit — UX Audit" },
       {
         property: "og:description",
-        content: "Tell us about your website and business to get your ethical UX audit.",
+        content:
+          "Tell us the page and the business so we can break down its persuasion techniques.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
