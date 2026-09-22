@@ -611,7 +611,6 @@ export const runAudit = createServerFn({ method: "POST" })
       if (index > 0) await new Promise((r) => setTimeout(r, 400));
       try {
         const result = await strategy.run();
-        console.log(`[audit] ${strategy.label} -> ${result.status} len=${result.body.length}`);
         lastStatus = result.status;
         if (!result.ok) {
           if (result.status === 403 || result.status === 429 || result.status === 401) {
