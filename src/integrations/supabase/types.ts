@@ -62,6 +62,7 @@ export type Database = {
         Row: {
           business_description: string
           business_name: string
+          client_key: string | null
           created_at: string
           id: string
           message: string | null
@@ -72,6 +73,7 @@ export type Database = {
         Insert: {
           business_description?: string
           business_name: string
+          client_key?: string | null
           created_at?: string
           id?: string
           message?: string | null
@@ -82,6 +84,7 @@ export type Database = {
         Update: {
           business_description?: string
           business_name?: string
+          client_key?: string | null
           created_at?: string
           id?: string
           message?: string | null
