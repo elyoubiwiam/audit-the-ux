@@ -92,7 +92,7 @@ function Index() {
             See what's actually persuading visitors on any landing page
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
-            Paste a URL and get a plain-language breakdown of the techniques a page uses to
+            Paste a URL and get a plain-language breakdown of the psychological techniques a page uses to
             convince people, and how well each one is working.
           </p>
           <Link
