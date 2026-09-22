@@ -19,7 +19,6 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect } from "react";
 import { z } from "zod";
 
 import { getAudit } from "@/lib/audit.functions";
@@ -84,30 +83,10 @@ const categoryStyles: Record<string, string> = {
   "Loss aversion & framing": "bg-red-500/10 text-red-700 border-red-500/20",
 };
 
-function slugifyUrl(raw: string) {
-  try {
-    const host = new URL(raw).hostname.replace(/^www\./, "");
-    return host.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
-  } catch {
-    return "report";
-  }
-}
-
 function Results() {
   const audit = Route.useLoaderData();
 
-  const docName = audit
-    ? `ux-audit-${slugifyUrl(audit.url)}-${new Date(audit.createdAt).toISOString().slice(0, 10)}`
-    : null;
 
-  useEffect(() => {
-    if (!docName) return;
-    const previous = document.title;
-    document.title = docName;
-    return () => {
-      document.title = previous;
-    };
-  }, [docName]);
 
   if (!audit) {
     return (
