@@ -1,5 +1,18 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, CheckCircle2, ShieldAlert } from "lucide-react";
+import {
+  AlarmClock,
+  ArrowRight,
+  BadgeCheck,
+  BookOpen,
+  CheckCircle2,
+  MousePointerClick,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+  Tag,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { z } from "zod";
 
 import { getAudit } from "@/lib/audit.functions";
@@ -31,6 +44,17 @@ export const Route = createFileRoute("/results")({
   }),
   component: Results,
 });
+
+const categoryIcons: Record<string, LucideIcon> = {
+  "Urgency & scarcity": AlarmClock,
+  "Social proof": Users,
+  "Authority & trust": BadgeCheck,
+  "Risk reversal": ShieldCheck,
+  "Anchoring & pricing psychology": Tag,
+  "CTA design & friction reduction": MousePointerClick,
+  "Storytelling & emotional framing": BookOpen,
+  "Personalization & specificity": Sparkles,
+};
 
 const categoryStyles: Record<string, string> = {
   "Urgency & scarcity": "bg-orange-500/10 text-orange-700 border-orange-500/20",
