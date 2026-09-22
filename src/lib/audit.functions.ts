@@ -4,7 +4,7 @@ import { z } from "zod";
 const BOT_UA = "UXAuditBot/1.0 (+https://uxaudit.lovable.app/about-bot)";
 
 const AuditInput = z.object({
-  url: z.string().trim().min(1).max(200),
+  url: z.string().trim().min(1).max(2000),
   businessName: z.string().trim().min(1).max(100),
   description: z.string().trim().min(1).max(500),
 });
@@ -152,6 +152,70 @@ function extractSignals(html: string) {
     preCheckedInputs: checked,
     hasUrgencyMarkup: countdowns,
   };
+}
+
+/**
+ * Text that survives on JS-rendered pages: title, meta/OG tags, JSON-LD,
+ * noscript blocks, image alt text, aria labels, headings and button copy.
+ */
+function extractFallbackText(html: string) {
+  const parts: string[] = [];
+
+  const title = html.match(/<title\b[^>]*>([\s\S]{0,300}?)<\/title>/i);
+  if (title) parts.push(htmlToText(title[1] ?? ""));
+
+  for (const m of html.matchAll(/<meta\b[^>]*>/gi)) {
+    const tag = m[0];
+    if (!/name=["']?(description|twitter:[\w:-]+)|property=["']?og:[\w:-]+/i.test(tag)) continue;
+    const content = tag.match(/content=["']([\s\S]*?)["']/i);
+    if (content?.[1]) parts.push(htmlToText(content[1]));
+  }
+
+  for (const m of html.matchAll(
+    /<script\b[^>]*type=["']application\/(ld\+json|json)["'][^>]*>([\s\S]*?)<\/script>/gi,
+  )) {
+    const raw = m[2] ?? "";
+    for (const s of raw.matchAll(/"(?:[^"\\]|\\.){3,300}"/g)) {
+      const v = s[0].slice(1, -1);
+      if (/[a-zA-Z]{3,}\s/.test(v) && !/^https?:|^\//.test(v)) parts.push(v);
+    }
+  }
+
+  for (const m of html.matchAll(/<noscript\b[^>]*>([\s\S]*?)<\/noscript>/gi)) {
+    parts.push(htmlToText(m[1] ?? ""));
+  }
+
+  for (const m of html.matchAll(/\b(alt|aria-label|placeholder|title)=["']([^"']{3,200})["']/gi)) {
+    parts.push(htmlToText(m[2] ?? ""));
+  }
+
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const p of parts) {
+    const t = p.trim();
+    if (t.length < 3 || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out.join(". ");
+}
+
+/** Combines visible text with fallback sources so JS-heavy pages still get reviewed. */
+function buildPageText(html: string) {
+  const visible = htmlToText(html);
+  const signals = extractSignals(html);
+  const extras = [
+    extractFallbackText(html),
+    signals.headings.join(". "),
+    signals.buttons.join(". "),
+  ]
+    .filter(Boolean)
+    .join(". ");
+
+  if (visible.length >= 400) {
+    return `${visible}\n\nPage metadata, headings and button labels: ${extras}`.slice(0, 30000);
+  }
+  return [visible, extras].filter(Boolean).join("\n\n").slice(0, 30000);
 }
 
 function stripDashes(text: string) {
@@ -413,31 +477,61 @@ export const runAudit = createServerFn({ method: "POST" })
       );
     }
 
-    let html: string;
-    try {
+    const attempt = async (ua: string) => {
       const res = await fetch(target.toString(), {
         headers: {
-          "User-Agent": BOT_UA,
-          Accept: "text/html,application/xhtml+xml",
-          "Accept-Language": "en,*",
+          "User-Agent": ua,
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9,*;q=0.5",
         },
         redirect: "follow",
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(25000),
       });
-      if (!res.ok) {
+      const contentType = res.headers.get("content-type") ?? "";
+      const body = (await res.text()).slice(0, 600000);
+      return { ok: res.ok, status: res.status, contentType, body };
+    };
+
+    const BROWSER_UA = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 ${BOT_UA}`;
+
+    let html = "";
+    let pageText = "";
+    let lastStatus: number | null = null;
+    let lastError = false;
+
+    for (const ua of [BOT_UA, BROWSER_UA]) {
+      try {
+        const result = await attempt(ua);
+        lastStatus = result.status;
+        if (!result.ok) continue;
+        if (result.contentType && !/html|xml|text\/plain/i.test(result.contentType)) {
+          return saveScan(
+            "failed",
+            "That address doesn't return a web page we can review.",
+            null,
+            [],
+          );
+        }
+        const candidate = buildPageText(result.body);
+        if (candidate.length > pageText.length) {
+          html = result.body;
+          pageText = candidate;
+        }
+        if (pageText.length >= 400) break;
+      } catch {
+        lastError = true;
+      }
+    }
+
+    if (!html) {
+      if (lastStatus && !lastError) {
         return saveScan(
           "failed",
-          `We couldn't load the page. The site responded with status ${res.status} and may be blocking automated visitors.`,
+          `We couldn't load the page. The site responded with status ${lastStatus} and may be blocking automated visitors.`,
           null,
           [],
         );
       }
-      const contentType = res.headers.get("content-type") ?? "";
-      if (!contentType.includes("html")) {
-        return saveScan("failed", "That address doesn't return a web page we can review.", null, []);
-      }
-      html = (await res.text()).slice(0, 600000);
-    } catch {
       return saveScan(
         "failed",
         "We couldn't reach that page. It timed out or refused the request.",
@@ -446,11 +540,10 @@ export const runAudit = createServerFn({ method: "POST" })
       );
     }
 
-    const pageText = htmlToText(html).slice(0, 30000);
-    if (pageText.length < 100) {
+    if (pageText.length < 40) {
       return saveScan(
         "failed",
-        "The page loaded but contained almost no readable text, so there was nothing to review.",
+        "The page loaded but returned no readable content, most likely because it renders entirely in the browser and blocks direct requests.",
         null,
         [],
       );

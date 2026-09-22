@@ -32,7 +32,7 @@ const formSchema = z.object({
     .string()
     .trim()
     .nonempty("Please enter your website URL")
-    .max(200, "URL is too long")
+    .max(2000, "URL is too long")
     .refine(
       (v) => /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(v),
       "Please enter a valid URL, e.g. example.com",
