@@ -215,7 +215,7 @@ function AuditForm() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || limitReached}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-base font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-80"
           >
             {loading ? (
@@ -223,6 +223,8 @@ function AuditForm() {
                 <Loader2 className="h-5 w-5 animate-spin" />
                 Analyzing your site…
               </>
+            ) : limitReached ? (
+              "Daily limit reached"
             ) : (
               "Run my audit"
             )}
