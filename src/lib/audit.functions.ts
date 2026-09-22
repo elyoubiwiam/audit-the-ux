@@ -560,9 +560,10 @@ export const runAudit = createServerFn({ method: "POST" })
       // Cache-busting param: the shared reader cache returns 403 for repeat hits.
       const sep = url.includes("?") ? "&" : "?";
       const res = await fetch(`https://r.jina.ai/${url}${sep}uxa=${Date.now()}`, {
-        headers: { "User-Agent": DESKTOP_UA, Accept: "text/plain,*/*" },
+        // No User-Agent: the reader forwards it, and a browser UA trips the target's bot wall.
+        headers: { Accept: "text/plain,*/*" },
         redirect: "follow",
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(30000),
       });
       return {
         ok: res.ok,
