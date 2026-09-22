@@ -120,13 +120,13 @@ function Results() {
   });
 
   return (
-    <div className="min-h-screen bg-background px-6 py-16">
+    <div className="min-h-screen bg-background px-5 py-10 sm:px-6 sm:py-16">
       <main className="mx-auto w-full max-w-2xl">
-        <p className="text-sm font-medium text-muted-foreground">
+        <p className="break-words text-sm font-medium text-muted-foreground">
           {audit.businessName} · {audit.url}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">Scanned on {scanDate}</p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground">
+        <h1 className="mt-3 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           What's making this page convincing
         </h1>
         {countLine && (
