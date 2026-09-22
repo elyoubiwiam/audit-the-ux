@@ -589,6 +589,11 @@ export const runAudit = createServerFn({ method: "POST" })
               homepage: true,
               run: () => fetchAs(`${origin}/`, DESKTOP_UA, origin),
             },
+            {
+              label: "homepage-reader",
+              homepage: true,
+              run: () => readerFetch(`${origin}/`),
+            },
           ]
         : []),
     ];
