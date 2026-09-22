@@ -217,13 +217,13 @@ function Shell({
   subject?: string;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6">
+    <div className="flex min-h-screen items-center justify-center bg-background px-5 sm:px-6">
       <main className="w-full max-w-lg text-center">
         <div className="mx-auto mb-6 inline-flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-foreground">
           {icon}
         </div>
         {subject && <p className="mb-3 text-sm text-muted-foreground">{subject}</p>}
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">{title}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{title}</h1>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">{body}</p>
         <Link
           to="/audit"
