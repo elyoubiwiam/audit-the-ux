@@ -79,8 +79,21 @@ function Results() {
 
   const countLine =
     findings.length > 0
-      ? `${findings.length} persuasion technique${findings.length === 1 ? "" : "s"} identified on this page.`
+      ? `We identified ${findings.length} persuasion technique${findings.length === 1 ? "" : "s"} on this page.`
       : null;
+
+  const categoryOrder = Object.keys(categoryStyles);
+  const groups = new Map<string, typeof findings>();
+  for (const finding of findings) {
+    const key = finding.category || "Other";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(finding);
+  }
+  const orderedGroups = [...groups.entries()].sort(([a], [b]) => {
+    const ia = categoryOrder.indexOf(a);
+    const ib = categoryOrder.indexOf(b);
+    return (ia === -1 ? categoryOrder.length : ia) - (ib === -1 ? categoryOrder.length : ib);
+  });
 
   return (
     <div className="min-h-screen bg-background px-6 py-16">
@@ -111,36 +124,40 @@ function Results() {
           </div>
         ) : (
           <>
-            <h2 className="mt-12 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Techniques identified
-            </h2>
-            <ul className="mt-4 space-y-4">
-              {findings.map((finding) => (
-                <li
-                  key={finding.id}
-                  className="rounded-2xl border border-border bg-card p-5 shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <h3 className="text-base font-semibold text-foreground">{finding.title}</h3>
-                    <span
-                      className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                        categoryStyles[finding.category] ?? "bg-primary/10 text-primary border-primary/20"
-                      }`}
+            {orderedGroups.map(([category, items]) => (
+              <section key={category} className="mt-12">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  {category}
+                </h2>
+                <ul className="mt-4 space-y-4">
+                  {items.map((finding) => (
+                    <li
+                      key={finding.id}
+                      className="rounded-2xl border border-border bg-card p-5 shadow-sm"
                     >
-                      {finding.category}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {finding.explanation}
-                  </p>
-                  {finding.note && (
-                    <p className="mt-2 text-sm italic leading-relaxed text-muted-foreground/80">
-                      {finding.note}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
+                      <div className="flex items-start justify-between gap-4">
+                        <h3 className="text-base font-semibold text-foreground">{finding.title}</h3>
+                        <span
+                          className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                            categoryStyles[finding.category] ?? "bg-primary/10 text-primary border-primary/20"
+                          }`}
+                        >
+                          {finding.category}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        {finding.explanation}
+                      </p>
+                      {finding.note && (
+                        <p className="mt-2 text-sm italic leading-relaxed text-muted-foreground/80">
+                          {finding.note}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
           </>
         )}
 
