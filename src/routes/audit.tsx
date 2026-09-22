@@ -1,8 +1,38 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
+
+const DAILY_LIMIT = 3;
+const USAGE_KEY = "ux-audit-usage";
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function readUsedToday(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const raw = window.localStorage.getItem(USAGE_KEY);
+    if (!raw) return 0;
+    const parsed = JSON.parse(raw) as { day?: string; count?: number };
+    return parsed.day === todayKey() ? (parsed.count ?? 0) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function recordUse() {
+  try {
+    window.localStorage.setItem(
+      USAGE_KEY,
+      JSON.stringify({ day: todayKey(), count: readUsedToday() + 1 }),
+    );
+  } catch {
+    /* storage unavailable */
+  }
+}
 
 import { runAudit } from "@/lib/audit.functions";
 
@@ -60,9 +90,18 @@ function AuditForm() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [usedToday, setUsedToday] = useState(0);
+
+  useEffect(() => {
+    setUsedToday(readUsedToday());
+  }, []);
+
+  const remaining = Math.max(0, DAILY_LIMIT - usedToday);
+  const limitReached = remaining === 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (limitReached) return;
     const result = formSchema.safeParse({ url, businessName, description });
     if (!result.success) {
       const next: FormErrors = {};
@@ -78,6 +117,8 @@ function AuditForm() {
     setLoading(true);
     try {
       const scan = await audit({ data: result.data });
+      recordUse();
+      setUsedToday(readUsedToday());
       await navigate({ to: "/results", search: { scan: scan.scanId } });
     } catch (error) {
       setSubmitError(
@@ -112,6 +153,11 @@ function AuditForm() {
         </h1>
         <p className="mt-3 text-base text-muted-foreground">
           Three quick details and we can start.
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {limitReached
+            ? "You've used all 3 audits for today. Come back tomorrow."
+            : `${remaining} of ${DAILY_LIMIT} audits left today.`}
         </p>
 
         <form onSubmit={handleSubmit} className="mt-10 space-y-6" noValidate>
@@ -169,7 +215,7 @@ function AuditForm() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || limitReached}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-base font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-80"
           >
             {loading ? (
@@ -177,6 +223,8 @@ function AuditForm() {
                 <Loader2 className="h-5 w-5 animate-spin" />
                 Analyzing your site…
               </>
+            ) : limitReached ? (
+              "Daily limit reached"
             ) : (
               "Run my audit"
             )}
