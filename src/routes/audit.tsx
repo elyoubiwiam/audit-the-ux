@@ -90,9 +90,18 @@ function AuditForm() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [usedToday, setUsedToday] = useState(0);
+
+  useEffect(() => {
+    setUsedToday(readUsedToday());
+  }, []);
+
+  const remaining = Math.max(0, DAILY_LIMIT - usedToday);
+  const limitReached = remaining === 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (limitReached) return;
     const result = formSchema.safeParse({ url, businessName, description });
     if (!result.success) {
       const next: FormErrors = {};
