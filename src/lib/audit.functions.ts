@@ -18,6 +18,11 @@ export const CATEGORIES = [
   "CTA design & friction reduction",
   "Storytelling & emotional framing",
   "Personalization & specificity",
+  "Cognitive load & friction",
+  "Attention & visual hierarchy",
+  "Commitment & consistency",
+  "Reciprocity",
+  "Loss aversion & framing",
 ] as const;
 
 export type AuditFinding = {
@@ -26,7 +31,11 @@ export type AuditFinding = {
   category: (typeof CATEGORIES)[number];
   explanation: string;
   note: string | null;
+  principle: string | null;
+  evidence: string | null;
 };
+
+type DraftFinding = Omit<AuditFinding, "id">;
 
 export type AuditResult = {
   scanId: string;
@@ -131,7 +140,117 @@ function extractSignals(html: string) {
     .slice(0, 20)
     .map((m) => m[0]);
   const countdowns = /countdown|timer|expires? in|only \d+ left|hurry|ends soon/i.test(html);
-  return { buttons, preCheckedInputs: checked, hasUrgencyMarkup: countdowns };
+  const headings = [...html.matchAll(/<h([1-3])\b[^>]*>([\s\S]{0,200}?)<\/h\1>/gi)]
+    .map((m) => htmlToText(m[2] ?? ""))
+    .filter((t) => t.length > 0)
+    .slice(0, 30);
+  const formFields = (html.match(/<input\b(?![^>]*type=["']?hidden)/gi) ?? []).length;
+  return {
+    buttons,
+    headings,
+    formFields,
+    preCheckedInputs: checked,
+    hasUrgencyMarkup: countdowns,
+  };
+}
+
+function stripDashes(text: string) {
+  return text.replace(/\s*[—–]\s*/g, ", ");
+}
+
+const CHECKLIST = [
+  `1. Urgency & scarcity: countdown timers, limited stock or spots, time-limited offers. Principle: scarcity, fear of missing out.`,
+  `2. Social proof: testimonials, review counts, customer logos, usage stats, "X people bought this". Principle: social validation, herd behaviour.`,
+  `3. Authority & trust: certifications, media mentions, expert endorsements, security badges, named leadership. Principle: authority bias.`,
+  `4. Risk reversal: money-back guarantees, free trials, "cancel anytime", no credit card required. Principle: perceived-risk reduction.`,
+  `5. Anchoring & pricing psychology: crossed-out prices, "most popular" plan, decoy tiers, per-month framing, charm pricing. Principle: anchoring, the decoy effect.`,
+  `6. CTA design & friction reduction: button copy, repetition, placement, contrast, implied number of steps, single-field forms. Principle: processing fluency, reduced activation energy.`,
+  `7. Storytelling & emotional framing: problem-agitation-solution structure, before and after framing, aspirational or identity language. Principle: narrative transportation, self-identity.`,
+  `8. Personalization & specificity: tailored-feeling copy, named use cases, role or industry segmentation, concrete numbers. Principle: self-reference effect, concreteness.`,
+  `9. Cognitive load & friction: how much thinking the page asks for. Amount of copy per screen, jargon, number of choices offered, form length, clarity of the next step. Principle: cognitive load, choice overload, Hick's law.`,
+  `10. Attention & visual hierarchy: what the page pushes you to look at first. Hero dominance, one primary action versus competing links, ordering of sections, contrast of the main CTA. Principle: visual salience, serial position effect.`,
+  `11. Commitment & consistency: small first asks that lead to bigger ones. Multi-step signup, quizzes, progress indicators, "start free then upgrade". Principle: foot in the door, the Zeigarnik effect.`,
+  `12. Reciprocity: something given before anything is asked. Free tools, templates, guides, calculators, open pricing, generous free tier. Principle: reciprocity norm.`,
+  `13. Loss aversion & framing: what you lose by not acting, negative framing, "stop wasting", "don't lose", cost-of-inaction maths, endowment through trials. Principle: loss aversion, framing effect, the endowment effect.`,
+].join("\n");
+
+const STYLE_RULES = [
+  `Write like an experienced practitioner talking to a colleague. Direct, concrete, professional.`,
+  `Never use em dashes or en dashes. Use full stops, commas or colons.`,
+  `No filler openers, no hype words such as unlock, supercharge, elevate, seamless, game-changing, in today's fast-paced world.`,
+  `No hedging padding such as "it is worth noting that". Say the thing.`,
+];
+
+function buildAnalysisPrompt(args: {
+  pageText: string;
+  signals: ReturnType<typeof extractSignals>;
+  businessName: string;
+  description: string;
+  url: string;
+}) {
+  return [
+    `You are a conversion and UX analyst with a background in behavioural science and cyberpsychology. Review one landing page and identify which persuasion and user-experience techniques it uses. This is a descriptive "what makes this page convincing" analysis, not a risk or dark-pattern audit.`,
+    `Business: ${args.businessName}`,
+    `Business description: ${args.description}`,
+    `Page URL: ${args.url}`,
+    ``,
+    `Use ONLY these categories. The "category" value must match one of them exactly:`,
+    CHECKLIST,
+    ``,
+    `For each technique found on this page, return:`,
+    `- title: the technique as used here, under 60 characters.`,
+    `- category: exactly one of the categories above.`,
+    `- principle: the behavioural or cognitive principle behind it, 1 to 4 words, for example "Loss aversion", "Processing fluency", "Authority bias".`,
+    `- evidence: the exact phrase, label or element from the page that triggered this finding, under 140 characters. Quote the page, do not paraphrase.`,
+    `- explanation: how it works on this page and what effect it has on the visitor. Max 2 sentences, plain language.`,
+    `- note: one sentence on how well executed it is, or null if there is nothing useful to add.`,
+    ``,
+    ...STYLE_RULES.map((r) => `Style: ${r}`),
+    ``,
+    `You can only see this one landing page. Never comment on or assume anything about checkout, billing or cancellation flows.`,
+    `Only report techniques you can point to in the content below. If the page uses none of them, return an empty findings list.`,
+    `Return at most 20 findings. Keep the summary under 400 characters: one or two sentences on the page's overall persuasion strategy.`,
+    ``,
+    `Button and link labels: ${JSON.stringify(args.signals.buttons)}`,
+    `Headings: ${JSON.stringify(args.signals.headings)}`,
+    `Visible form fields: ${args.signals.formFields}`,
+    `Pre-checked checkboxes found: ${args.signals.preCheckedInputs.length}`,
+    `Urgency-style markup detected: ${args.signals.hasUrgencyMarkup}`,
+    ``,
+    `Page text:`,
+    args.pageText,
+  ].join("\n");
+}
+
+function buildReviewPrompt(args: {
+  pageText: string;
+  url: string;
+  businessName: string;
+  draft: { summary: string; findings: DraftFinding[] };
+}) {
+  return [
+    `You are reviewing a draft persuasion analysis of one landing page before it is shown to a client. Be strict.`,
+    `Business: ${args.businessName}`,
+    `Page URL: ${args.url}`,
+    ``,
+    `Do all of the following:`,
+    `1. Remove any finding whose evidence does not appear in the page content below, or that is speculation about checkout, billing or cancellation.`,
+    `2. Merge findings that describe the same technique, keeping the strongest evidence.`,
+    `3. Correct the category when it is wrong, and the principle when it is imprecise. Categories must stay within this list:`,
+    CHECKLIST,
+    `4. Tighten every explanation to at most 2 sentences and make sure the evidence quotes the page.`,
+    `5. Rewrite the summary if it overstates what is on the page.`,
+    ``,
+    ...STYLE_RULES.map((r) => `Style: ${r}`),
+    ``,
+    `Return the cleaned summary and findings in the same shape. Keep at most 20 findings, ordered by how much they shape the visitor's decision.`,
+    ``,
+    `Draft analysis:`,
+    JSON.stringify(args.draft),
+    ``,
+    `Page text:`,
+    args.pageText,
+  ].join("\n");
 }
 
 async function analyze(args: {
@@ -160,76 +279,73 @@ async function analyze(args: {
       z.object({
         title: z.string(),
         category: z.enum(CATEGORIES),
+        principle: z.string().nullable(),
+        evidence: z.string().nullable(),
         explanation: z.string(),
         note: z.string().nullable(),
       }),
     ),
   });
 
-  const prompt = [
-    `You are a conversion and persuasion analyst. Review one webpage's landing page and identify which persuasion techniques it uses — this is a descriptive "what makes this page convincing" analysis, NOT a risk or dark-pattern audit.`,
-    `Business: ${args.businessName}`,
-    `Business description: ${args.description}`,
-    `Page URL: ${args.url}`,
-    ``,
-    `Identify ONLY techniques from this checklist — do not invent other categories. The "category" value must match one exactly:`,
-    `1. Urgency & scarcity: countdown timers, limited stock/spots language, time-limited offers.`,
-    `2. Social proof: testimonials, review counts, customer logos, "X people bought this", usage stats.`,
-    `3. Authority & trust: certifications, media mentions, expert endorsements, security badges.`,
-    `4. Risk reversal: money-back guarantees, free trials, "cancel anytime" messaging.`,
-    `5. Anchoring & pricing psychology: crossed-out original prices, "most popular" plan highlighting, tiered pricing framing.`,
-    `6. CTA design & friction reduction: button copy, placement, contrast, number of steps implied.`,
-    `7. Storytelling & emotional framing: problem-agitation-solution structure, before/after framing, aspirational language.`,
-    `8. Personalization & specificity: tailored-feeling copy, named use cases, niche-specific language.`,
-    ``,
-    `For each technique found on this page, return:`,
-    `- title: the technique name, under 60 characters.`,
-    `- category: exactly one of the categories above.`,
-    `- explanation: how the technique is being used on this page, in plain language, max 2 sentences, no jargon.`,
-    `- note: optionally, one sentence on how effective or well-executed it appears to be; use null if there's nothing meaningful to add.`,
-    ``,
-    `You can only see this one landing page. Never comment on or assume anything about checkout, billing, or cancellation flows.`,
-    `Only report techniques actually present in the content below. If the page uses none of these techniques, return an empty findings list.`,
-    `Return at most 12 findings. Keep the summary under 400 characters — one or two sentences on the page's overall persuasion approach.`,
-    ``,
-    `Button and link labels: ${JSON.stringify(args.signals.buttons)}`,
-    `Pre-checked checkboxes found: ${args.signals.preCheckedInputs.length}`,
-    `Urgency-style markup detected: ${args.signals.hasUrgencyMarkup}`,
-    ``,
-    `Page text:`,
-    args.pageText,
-  ].join("\n");
+  const providerOptions = {
+    openai: {
+      forceReasoning: true,
+      reasoningEffort: "low",
+      reasoningSummary: "auto",
+      store: false,
+      include: ["reasoning.encrypted_content"],
+    },
+  } as const;
 
-  try {
+  const run = async (prompt: string) => {
     const result = streamText({
       model: lovable.responses("openai/gpt-6-astra"),
       output: Output.object({ schema }),
       prompt,
-      providerOptions: {
-        openai: {
-          forceReasoning: true,
-          reasoningEffort: "low",
-          reasoningSummary: "auto",
-          store: false,
-          include: ["reasoning.encrypted_content"],
-        },
-      },
+      providerOptions,
     });
-    const output = await result.output;
-    return {
-      summary: output.summary.slice(0, 1000),
-      findings: output.findings.slice(0, 12).map((f) => ({
-        title: f.title.slice(0, 120),
-        category: f.category,
-        explanation: f.explanation.slice(0, 600),
-        note: f.note ? f.note.slice(0, 300) : null,
-      })),
-    };
+    return await result.output;
+  };
+
+  const clean = (output: z.infer<typeof schema>) => ({
+    summary: stripDashes(output.summary).slice(0, 1000),
+    findings: output.findings.slice(0, 20).map<DraftFinding>((f) => ({
+      title: stripDashes(f.title).slice(0, 120),
+      category: f.category,
+      principle: f.principle ? stripDashes(f.principle).slice(0, 60) : null,
+      evidence: f.evidence ? stripDashes(f.evidence).slice(0, 200) : null,
+      explanation: stripDashes(f.explanation).slice(0, 600),
+      note: f.note ? stripDashes(f.note).slice(0, 300) : null,
+    })),
+  });
+
+  let draft: ReturnType<typeof clean>;
+  try {
+    draft = clean(await run(buildAnalysisPrompt(args)));
   } catch (error) {
     if (NoObjectGeneratedError.isInstance(error)) {
       throw new Error("The analysis came back in an unexpected format. Please try again.");
     }
     throw error;
+  }
+
+  if (draft.findings.length === 0) return draft;
+
+  // Review pass. If it fails for any reason, keep the first-pass result.
+  try {
+    const reviewed = clean(
+      await run(
+        buildReviewPrompt({
+          pageText: args.pageText,
+          url: args.url,
+          businessName: args.businessName,
+          draft,
+        }),
+      ),
+    );
+    return reviewed.findings.length > 0 ? reviewed : draft;
+  } catch {
+    return draft;
   }
 }
 
@@ -250,7 +366,7 @@ export const runAudit = createServerFn({ method: "POST" })
       status: "completed" | "blocked" | "failed",
       message: string | null,
       summary: string | null,
-      findings: { title: string; category: AuditFinding["category"]; explanation: string; note: string | null }[],
+      findings: DraftFinding[],
     ): Promise<AuditResult> => {
       const { data: scan, error } = await supabaseAdmin
         .from("audit_scans")
@@ -271,7 +387,7 @@ export const runAudit = createServerFn({ method: "POST" })
         const { data: rows, error: findingsError } = await supabaseAdmin
           .from("audit_findings")
           .insert(findings.map((f) => ({ ...f, scan_id: scan.id })))
-          .select("id, title, category, explanation, note");
+          .select("id, title, category, explanation, note, principle, evidence");
         if (findingsError) throw new Error("We couldn't save the audit findings.");
         saved = (rows ?? []) as AuditFinding[];
       }
@@ -291,7 +407,7 @@ export const runAudit = createServerFn({ method: "POST" })
     if (!(await isAllowedByRobots(target))) {
       return saveScan(
         "blocked",
-        "This page can't be scanned: the site's robots.txt asks automated tools not to visit it.",
+        "This page can't be scanned. The site's robots.txt asks automated tools not to visit it.",
         null,
         [],
       );
@@ -311,7 +427,7 @@ export const runAudit = createServerFn({ method: "POST" })
       if (!res.ok) {
         return saveScan(
           "failed",
-          `We couldn't load the page (the site responded with status ${res.status}). It may be blocking automated visitors.`,
+          `We couldn't load the page. The site responded with status ${res.status} and may be blocking automated visitors.`,
           null,
           [],
         );
@@ -324,7 +440,7 @@ export const runAudit = createServerFn({ method: "POST" })
     } catch {
       return saveScan(
         "failed",
-        "We couldn't reach that page — it timed out or refused our request.",
+        "We couldn't reach that page. It timed out or refused the request.",
         null,
         [],
       );
@@ -383,7 +499,7 @@ export const getAudit = createServerFn({ method: "GET" })
 
     const { data: findings } = await supabaseAdmin
       .from("audit_findings")
-      .select("id, title, category, explanation, note")
+      .select("id, title, category, explanation, note, principle, evidence")
       .eq("scan_id", scan.id)
       .order("created_at", { ascending: true });
 
