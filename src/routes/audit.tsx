@@ -9,12 +9,12 @@ import { runAudit } from "@/lib/audit.functions";
 export const Route = createFileRoute("/audit")({
   head: () => ({
     meta: [
-      { title: "Start your audit — UX Audit" },
+      { title: "Start your audit | UX Audit" },
       {
         name: "description",
         content: "Tell us the page and the business so we can break down its persuasion techniques.",
       },
-      { property: "og:title", content: "Start your audit — UX Audit" },
+      { property: "og:title", content: "Start your audit | UX Audit" },
       {
         property: "og:description",
         content:
@@ -111,7 +111,7 @@ function AuditForm() {
           Start your audit
         </h1>
         <p className="mt-3 text-base text-muted-foreground">
-          Three quick details — that's all we need to get started.
+          Three quick details and we can start.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-10 space-y-6" noValidate>
@@ -184,8 +184,8 @@ function AuditForm() {
 
           {loading && (
             <p className="text-center text-sm text-muted-foreground">
-              Checking the site's rules, reading the page and reviewing it — this can take up
-              to a minute.
+              Checking the site's rules, reading the page and reviewing the findings. This can take
+              up to a minute.
             </p>
           )}
           {submitError && (

@@ -1,0 +1,1 @@
+ALTER TABLE public.audit_findings ADD COLUMN IF NOT EXISTS principle text, ADD COLUMN IF NOT EXISTS evidence text;

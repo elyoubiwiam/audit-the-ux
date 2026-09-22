@@ -10,20 +10,20 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "UX Audit — See what's persuading visitors on any landing page" },
+      { title: "UX Audit: what's persuading visitors on any landing page" },
       {
         name: "description",
         content:
-          "Paste any landing page URL and get a plain-language breakdown of the persuasion techniques it uses — urgency, social proof, risk reversal, pricing psychology and more.",
+          "Paste any landing page URL and get a plain-language breakdown of the persuasion techniques it uses: urgency, social proof, risk reversal, pricing psychology and more.",
       },
       {
         property: "og:title",
-        content: "UX Audit — See what's persuading visitors on any landing page",
+        content: "UX Audit: what's persuading visitors on any landing page",
       },
       {
         property: "og:description",
         content:
-          "Paste any landing page URL and get a plain-language breakdown of the persuasion techniques it uses — urgency, social proof, risk reversal, pricing psychology and more.",
+          "Paste any landing page URL and get a plain-language breakdown of the persuasion techniques it uses: urgency, social proof, risk reversal, pricing psychology and more.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -53,7 +53,7 @@ const steps = [
 const useCases = [
   {
     title: "Audit your own landing page",
-    text: "See which techniques are already doing the work — and which ones you're leaving on the table.",
+    text: "See which techniques are already doing the work, and which ones you're leaving on the table.",
   },
   {
     title: "Study what a competitor is doing well",
@@ -88,7 +88,7 @@ function Index() {
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
             Paste a URL and get a plain-language breakdown of the techniques a page uses to
-            convince people — and how well each one is working.
+            convince people, and how well each one is working.
           </p>
           <Link
             to="/audit"
@@ -132,7 +132,7 @@ function Index() {
               <li key={useCase.title} className="flex gap-3">
                 <Check className="mt-1 h-4 w-4 shrink-0 text-primary" />
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  <span className="font-semibold text-foreground">{useCase.title}</span> —{" "}
+                  <span className="font-semibold text-foreground">{useCase.title}.</span>{" "}
                   {useCase.text}
                 </p>
               </li>
@@ -142,7 +142,7 @@ function Index() {
       </main>
 
       <footer className="mt-12 border-t border-border px-5 py-8 text-center text-sm text-muted-foreground sm:mt-16">
-        UX Audit — see what makes a page convincing.
+        UX Audit. See what makes a page convincing.
       </footer>
     </div>
   );

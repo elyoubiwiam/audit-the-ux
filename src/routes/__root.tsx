@@ -77,7 +77,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "UX Audit — See what makes a landing page convert" },
+      { title: "UX Audit: what makes a landing page convert" },
       {
         name: "description",
         content:
@@ -86,7 +86,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "author", content: "UX Audit" },
       {
         property: "og:title",
-        content: "UX Audit — See what makes a landing page convert",
+        content: "UX Audit: what makes a landing page convert",
       },
       {
         property: "og:description",
