@@ -324,6 +324,7 @@ async function analyze(args: {
   description: string;
   url: string;
   apiKey: string;
+  deadline: number;
 }) {
   const { createOpenAI } = await import("@ai-sdk/openai");
   const { streamText, Output, NoObjectGeneratedError } = await import("ai");
@@ -368,11 +369,14 @@ async function analyze(args: {
 
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  const run = async (prompt: string) => {
+  const left = () => args.deadline - Date.now();
+
+  const run = async (prompt: string, stopAt: number) => {
     let lastError: unknown;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const result = streamText({
+          abortSignal: AbortSignal.timeout(Math.max(1000, stopAt - Date.now())),
           model: lovable.responses("openai/gpt-6-astra"),
           output: Output.object({ schema }),
           prompt,
@@ -381,8 +385,9 @@ async function analyze(args: {
         return await result.output;
       } catch (error) {
         lastError = error;
-        if (!isOverloaded(error) || attempt === 2) throw error;
-        await sleep(1500 * (attempt + 1));
+        const wait = 1500 * (attempt + 1);
+        if (!isOverloaded(error) || attempt === 2 || stopAt - Date.now() < wait + 15000) throw error;
+        await sleep(wait);
       }
     }
     throw lastError;
@@ -402,8 +407,11 @@ async function analyze(args: {
 
   let draft: ReturnType<typeof clean>;
   try {
-    draft = clean(await run(buildAnalysisPrompt(args)));
+    draft = clean(await run(buildAnalysisPrompt(args), args.deadline));
   } catch (error) {
+    if (left() <= 0 || (error instanceof Error && /abort|timeout/i.test(error.name + error.message))) {
+      throw new Error("The analysis took too long. Please try again in a moment.");
+    }
     if (NoObjectGeneratedError.isInstance(error)) {
       throw new Error("The analysis came back in an unexpected format. Please try again.");
     }
@@ -411,6 +419,8 @@ async function analyze(args: {
   }
 
   if (draft.findings.length === 0) return draft;
+  // Only run the review pass when there's comfortably enough time left.
+  if (left() < 20000) return draft;
 
   // Review pass. If it fails for any reason, keep the first-pass result.
   try {
@@ -422,6 +432,7 @@ async function analyze(args: {
           businessName: args.businessName,
           draft,
         }),
+        args.deadline,
       ),
     );
     return reviewed.findings.length > 0 ? reviewed : draft;
@@ -454,6 +465,8 @@ export const runAudit = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => AuditInput.parse(input))
   .handler(async ({ data }): Promise<AuditResult> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Hard budget: the whole audit must finish in under a minute.
+    const deadline = Date.now() + 52000;
 
     const clientKey = await getClientKey();
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -726,6 +739,7 @@ export const runAudit = createServerFn({ method: "POST" })
         description: data.description,
         url: usedHomepage ? `${origin}/` : target.toString(),
         apiKey,
+        deadline,
       });
       const summary = usedHomepage
         ? `The page you entered refused our request, so this report covers the home page at ${origin}. ${analysis.summary ?? ""}`.trim()
