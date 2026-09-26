@@ -735,7 +735,6 @@ export const runAudit = createServerFn({ method: "POST" })
         description: data.description,
         url: usedHomepage ? `${origin}/` : target.toString(),
         apiKey,
-        deadline,
       });
       const summary = usedHomepage
         ? `The page you entered refused our request, so this report covers the home page at ${origin}. ${analysis.summary ?? ""}`.trim()
