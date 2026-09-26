@@ -361,14 +361,31 @@ async function analyze(args: {
     },
   } as const;
 
+  const isOverloaded = (error: unknown) => {
+    const raw = error instanceof Error ? error.message : String(error ?? "");
+    return /503|overloaded|unavailable/i.test(raw);
+  };
+
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
   const run = async (prompt: string) => {
-    const result = streamText({
-      model: lovable.responses("openai/gpt-6-astra"),
-      output: Output.object({ schema }),
-      prompt,
-      providerOptions,
-    });
-    return await result.output;
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const result = streamText({
+          model: lovable.responses("openai/gpt-6-astra"),
+          output: Output.object({ schema }),
+          prompt,
+          providerOptions,
+        });
+        return await result.output;
+      } catch (error) {
+        lastError = error;
+        if (!isOverloaded(error) || attempt === 2) throw error;
+        await sleep(1500 * (attempt + 1));
+      }
+    }
+    throw lastError;
   };
 
   const clean = (output: z.infer<typeof schema>) => ({
@@ -438,11 +455,17 @@ export const runAudit = createServerFn({ method: "POST" })
 
     const clientKey = await getClientKey();
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { count } = await supabaseAdmin
-      .from("audit_scans")
-      .select("id", { count: "exact", head: true })
-      .eq("client_key", clientKey)
-      .gte("created_at", since);
+    // Only completed audits count toward the daily limit, and requests we
+    // can't attribute to a network address skip the check entirely.
+    const { count } =
+      clientKey === UNKNOWN_CLIENT_KEY
+        ? { count: 0 }
+        : await supabaseAdmin
+            .from("audit_scans")
+            .select("id", { count: "exact", head: true })
+            .eq("client_key", clientKey)
+            .eq("status", "completed")
+            .gte("created_at", since);
     if ((count ?? 0) >= DAILY_AUDIT_LIMIT) {
       throw new Error(
         `You've used all ${DAILY_AUDIT_LIMIT} audits for today. Please come back tomorrow.`,
