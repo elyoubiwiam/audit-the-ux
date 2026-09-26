@@ -675,7 +675,7 @@ export const runAudit = createServerFn({ method: "POST" })
         if (candidate.length > pageText.length) {
           html = result.isText ? "" : result.body;
           pageText = candidate;
-          usedHomepage = !!strategy.homepage;
+          usedHomepage = !!strategy?.homepage;
         }
       });
     };
