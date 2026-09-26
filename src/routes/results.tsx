@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Download,
   Eye,
+  ExternalLink,
   Gift,
   Layers,
   MousePointerClick,
@@ -121,6 +122,8 @@ function Results() {
     day: "numeric",
   });
 
+  const scanHref = /^https?:\/\//i.test(audit.url) ? audit.url : `https://${audit.url}`;
+
   const countLine =
     findings.length > 0
       ? `We identified ${findings.length} persuasion technique${findings.length === 1 ? "" : "s"} on this page.`
@@ -142,10 +145,21 @@ function Results() {
   return (
     <div className="report-page min-h-screen bg-background px-5 py-10 sm:px-6 sm:py-16">
       <main className="mx-auto w-full max-w-2xl">
-        <p className="break-words text-sm font-medium text-muted-foreground">
-          {audit.businessName} · {audit.url}
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">Scanned on {scanDate}</p>
+        <p className="text-sm font-medium text-muted-foreground">{audit.businessName}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <a
+            href={scanHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={audit.url}
+            className="inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent"
+          >
+            <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Your URL</span>
+          </a>
+          <span className="text-sm text-muted-foreground">Scanned on {scanDate}</span>
+        </div>
+
         <h1 className="mt-3 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           What's making this page convincing
         </h1>
