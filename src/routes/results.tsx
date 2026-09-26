@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Download,
   Eye,
+  ExternalLink,
   Gift,
   Layers,
   MousePointerClick,
@@ -120,6 +121,8 @@ function Results() {
     month: "long",
     day: "numeric",
   });
+
+  const scanHref = /^https?:\/\//i.test(audit.url) ? audit.url : `https://${audit.url}`;
 
   const countLine =
     findings.length > 0
