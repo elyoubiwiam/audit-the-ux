@@ -8,6 +8,8 @@ import {
   ScanSearch,
 } from "lucide-react";
 
+import markUrl from "@/assets/ux-audit-mark.png";
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -74,7 +76,17 @@ function Index() {
   return (
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex max-w-4xl items-center justify-between px-5 py-5 sm:px-6 sm:py-6">
-        <span className="text-lg font-semibold tracking-tight text-foreground">UX Audit</span>
+        <Link to="/" className="flex items-center gap-2.5">
+          <img
+            src={markUrl}
+            alt=""
+            width={28}
+            height={28}
+            loading="lazy"
+            className="h-7 w-7 rounded-lg"
+          />
+          <span className="text-lg font-semibold tracking-tight text-foreground">UX Audit</span>
+        </Link>
         <Link
           to="/audit"
           className="text-sm font-medium text-primary transition-colors hover:text-primary/80"
