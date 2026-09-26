@@ -361,14 +361,31 @@ async function analyze(args: {
     },
   } as const;
 
+  const isOverloaded = (error: unknown) => {
+    const raw = error instanceof Error ? error.message : String(error ?? "");
+    return /503|overloaded|unavailable/i.test(raw);
+  };
+
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
   const run = async (prompt: string) => {
-    const result = streamText({
-      model: lovable.responses("openai/gpt-6-astra"),
-      output: Output.object({ schema }),
-      prompt,
-      providerOptions,
-    });
-    return await result.output;
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const result = streamText({
+          model: lovable.responses("openai/gpt-6-astra"),
+          output: Output.object({ schema }),
+          prompt,
+          providerOptions,
+        });
+        return await result.output;
+      } catch (error) {
+        lastError = error;
+        if (!isOverloaded(error) || attempt === 2) throw error;
+        await sleep(1500 * (attempt + 1));
+      }
+    }
+    throw lastError;
   };
 
   const clean = (output: z.infer<typeof schema>) => ({
@@ -415,6 +432,8 @@ async function analyze(args: {
 
 export const DAILY_AUDIT_LIMIT = 3;
 
+const UNKNOWN_CLIENT_KEY = "unknown";
+
 async function getClientKey(): Promise<string> {
   const { getRequest } = await import("@tanstack/react-start/server");
   const request = getRequest();
@@ -422,8 +441,8 @@ async function getClientKey(): Promise<string> {
   const ip =
     headers?.get("cf-connecting-ip") ??
     headers?.get("x-real-ip") ??
-    headers?.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown";
+    headers?.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (!ip) return UNKNOWN_CLIENT_KEY;
   const data = new TextEncoder().encode(`ux-audit:${ip}`);
   const digest = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(digest))
@@ -438,11 +457,17 @@ export const runAudit = createServerFn({ method: "POST" })
 
     const clientKey = await getClientKey();
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { count } = await supabaseAdmin
-      .from("audit_scans")
-      .select("id", { count: "exact", head: true })
-      .eq("client_key", clientKey)
-      .gte("created_at", since);
+    // Only completed audits count toward the daily limit, and requests we
+    // can't attribute to a network address skip the check entirely.
+    const { count } =
+      clientKey === UNKNOWN_CLIENT_KEY
+        ? { count: 0 }
+        : await supabaseAdmin
+            .from("audit_scans")
+            .select("id", { count: "exact", head: true })
+            .eq("client_key", clientKey)
+            .eq("status", "completed")
+            .gte("created_at", since);
     if ((count ?? 0) >= DAILY_AUDIT_LIMIT) {
       throw new Error(
         `You've used all ${DAILY_AUDIT_LIMIT} audits for today. Please come back tomorrow.`,
@@ -703,9 +728,10 @@ export const runAudit = createServerFn({ method: "POST" })
       const raw = error instanceof Error ? error.message : "";
       const rateLimited = /429|rate/i.test(raw);
       const noCredits = /402|credit/i.test(raw);
+      const overloaded = /503|overloaded|unavailable/i.test(raw);
       return saveScan(
         "failed",
-        rateLimited
+        rateLimited || overloaded
           ? "The analysis service is busy right now. Please try again in a moment."
           : noCredits
             ? "The analysis service is out of credits. Please top up and try again."
