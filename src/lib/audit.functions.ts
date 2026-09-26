@@ -659,10 +659,7 @@ export const runAudit = createServerFn({ method: "POST" })
         }
         gotAny = true;
         const candidate = result.isText ? result.body.trim() : buildPageText(result.body);
-        // Prefer the real page over the homepage when both have content.
-        const better =
-          candidate.length > pageText.length && (!usedHomepage || strategy.homepage || candidate.length >= 400);
-        if (better && !(strategy.homepage && pageText.length >= 400)) {
+        if (candidate.length > pageText.length) {
           html = result.isText ? "" : result.body;
           pageText = candidate;
           usedHomepage = !!strategy.homepage;
