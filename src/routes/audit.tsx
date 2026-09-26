@@ -163,7 +163,7 @@ function AuditForm() {
         <form onSubmit={handleSubmit} className="mt-10 space-y-6" noValidate>
           <div>
             <label htmlFor="url" className={labelClass}>
-              Website URL
+              Website URL to UX audit
             </label>
             <input
               id="url"
@@ -181,7 +181,7 @@ function AuditForm() {
 
           <div>
             <label htmlFor="businessName" className={labelClass}>
-              Business name
+              Your company name
             </label>
             <input
               id="businessName"
@@ -198,7 +198,7 @@ function AuditForm() {
 
           <div>
             <label htmlFor="description" className={labelClass}>
-              What does your business do?
+              What does your company do?
             </label>
             <textarea
               id="description"
