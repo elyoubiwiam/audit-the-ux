@@ -733,7 +733,8 @@ export const runAudit = createServerFn({ method: "POST" })
 
     try {
       const analysis = await analyze({
-        pageText,
+        // Shorter input keeps the model fast; the top of a landing page carries the persuasion.
+        pageText: pageText.slice(0, 18000),
         signals: extractSignals(html),
         businessName: data.businessName,
         description: data.description,
