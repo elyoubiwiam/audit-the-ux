@@ -432,6 +432,8 @@ async function analyze(args: {
 
 export const DAILY_AUDIT_LIMIT = 3;
 
+const UNKNOWN_CLIENT_KEY = "unknown";
+
 async function getClientKey(): Promise<string> {
   const { getRequest } = await import("@tanstack/react-start/server");
   const request = getRequest();
@@ -439,8 +441,8 @@ async function getClientKey(): Promise<string> {
   const ip =
     headers?.get("cf-connecting-ip") ??
     headers?.get("x-real-ip") ??
-    headers?.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown";
+    headers?.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (!ip) return UNKNOWN_CLIENT_KEY;
   const data = new TextEncoder().encode(`ux-audit:${ip}`);
   const digest = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(digest))
@@ -726,9 +728,10 @@ export const runAudit = createServerFn({ method: "POST" })
       const raw = error instanceof Error ? error.message : "";
       const rateLimited = /429|rate/i.test(raw);
       const noCredits = /402|credit/i.test(raw);
+      const overloaded = /503|overloaded|unavailable/i.test(raw);
       return saveScan(
         "failed",
-        rateLimited
+        rateLimited || overloaded
           ? "The analysis service is busy right now. Please try again in a moment."
           : noCredits
             ? "The analysis service is out of credits. Please top up and try again."
