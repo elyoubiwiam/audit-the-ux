@@ -8,6 +8,8 @@ import {
   ScanSearch,
 } from "lucide-react";
 
+import markUrl from "@/assets/ux-audit-mark.png";
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
