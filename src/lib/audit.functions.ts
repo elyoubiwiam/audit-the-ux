@@ -58,7 +58,7 @@ async function isAllowedByRobots(target: URL): Promise<boolean> {
   try {
     const res = await fetch(new URL("/robots.txt", target.origin).toString(), {
       headers: { "User-Agent": BOT_UA },
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(4000),
     });
     if (!res.ok) return true; // no robots.txt => allowed
     const text = (await res.text()).slice(0, 200000);
@@ -571,7 +571,7 @@ export const runAudit = createServerFn({ method: "POST" })
       const res = await fetch(url, {
         headers: browserHeaders(ua, origin),
         redirect: "follow",
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(10000),
       });
       return {
         ok: res.ok,
@@ -588,7 +588,7 @@ export const runAudit = createServerFn({ method: "POST" })
         // No User-Agent: the reader forwards it, and a browser UA trips the target's bot wall.
         headers: { Accept: "text/plain,*/*" },
         redirect: "follow",
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(12000),
       });
       return {
         ok: res.ok,
@@ -632,16 +632,22 @@ export const runAudit = createServerFn({ method: "POST" })
     let nonHtml = false;
     let gotAny = false;
 
-    for (const [index, strategy] of strategies.entries()) {
-      if (index > 0) await new Promise((r) => setTimeout(r, 400));
-      try {
-        const result = await strategy.run();
+    // Run strategies in parallel waves so a slow or blocked site can't eat the time budget.
+    const runWave = async (wave: typeof strategies) => {
+      const results = await Promise.allSettled(wave.map((s) => s.run()));
+      results.forEach((settled, i) => {
+        const strategy = wave[i];
+        if (settled.status === "rejected") {
+          lastError = true;
+          return;
+        }
+        const result = settled.value;
         lastStatus = result.status;
         if (!result.ok) {
           if (result.status === 403 || result.status === 429 || result.status === 401) {
             refused = true;
           }
-          continue;
+          return;
         }
         if (
           !result.isText &&
@@ -649,19 +655,24 @@ export const runAudit = createServerFn({ method: "POST" })
           !/html|xml|text\/plain/i.test(result.contentType)
         ) {
           nonHtml = true;
-          continue;
+          return;
         }
         gotAny = true;
         const candidate = result.isText ? result.body.trim() : buildPageText(result.body);
-        if (candidate.length > pageText.length) {
+        // Prefer the real page over the homepage when both have content.
+        const better =
+          candidate.length > pageText.length && (!usedHomepage || strategy.homepage || candidate.length >= 400);
+        if (better && !(strategy.homepage && pageText.length >= 400)) {
           html = result.isText ? "" : result.body;
           pageText = candidate;
           usedHomepage = !!strategy.homepage;
         }
-        if (pageText.length >= 400) break;
-      } catch {
-        lastError = true;
-      }
+      });
+    };
+
+    await runWave(strategies.filter((s) => !s.homepage));
+    if (pageText.length < 400 && isDeepLink) {
+      await runWave(strategies.filter((s) => s.homepage));
     }
 
     if (!gotAny) {
