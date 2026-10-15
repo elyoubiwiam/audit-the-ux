@@ -46,4 +46,4 @@ Urgency & scarcity · Social proof · Authority & trust · Risk reversal · Anch
 
 ---
 
-Built by **Wiam El Youbi**.
+Built by **Wiam El Youbi**, [wiam-elyoubi.com](https://wiam-elyoubi.com).
