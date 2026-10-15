@@ -1,34 +1,49 @@
 # UX Audit
 
-Create a simple web app called UX Audit. It should have:
+**See what's actually persuading visitors on any landing page.**
 
-- A clean landing page explaining the tool: "Get an ethical UX audit of your website"
+Paste a landing page URL and get a plain-language breakdown of the persuasion techniques it uses, including urgency, social proof, risk reversal and pricing psychology, with a note on how well each one is working.
 
-- A form where a user enters: their website URL, business name, and a short description of their business/industry
+**Live app:** https://audit-the-ux.lovable.app
 
-- On submit, show a loading state, then navigate to a results page (we'll wire up the real logic next)
+Free to use. No account needed.
 
-Keep the design minimal — light background, one accent color, no clutter.
+---
 
-This project was built with [Lovable](https://lovable.dev).
+## How it works
 
-**Live app**: https://audit-the-ux.lovable.app
+1. **Paste a URL.** Add the page you want to look at, plus a line about the business so the analysis has context.
+2. **We read the page.** UX Audit respects the site's scanning rules, then reads the copy, buttons and signals a visitor actually sees, on desktop and mobile.
+3. **Get the breakdown.** A clean report of the persuasion techniques in use, grouped by type, with a note on how well each one lands.
 
-## Build with Lovable
+## What you can use it for
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/4012f04f-9c2a-4533-8b1d-ddf347373569).
+- **Audit your own landing page:** see which techniques are already doing the work, and which ones you're leaving on the table.
+- **Study what a competitor does well:** understand the tactics behind a page that keeps converting the visitors you're losing.
+- **Learn real-world conversion techniques:** spot persuasion patterns in the wild instead of in a textbook.
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+## The approach
 
-## Development
+UX Audit is grounded in cyberpsychology and ethical design. It explains *how* a page persuades people, without giving it a single overall score.
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+## Key features
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
-```
+- Works with any page URL, of any length.
+- Reads the page as a visitor sees it, on desktop and mobile.
+- A downloadable PDF report, named after the audited company and the date.
+
+## Techniques it looks for
+
+Urgency & scarcity · Social proof · Authority & trust · Risk reversal · Anchoring & pricing psychology · CTA design & friction reduction · Storytelling & emotional framing · Personalisation & specificity · Cognitive load & friction · Attention & visual hierarchy · Commitment & consistency · Reciprocity · Loss aversion & framing
+
+## Tech stack
+
+- React, TypeScript, TanStack Start and Router, Vite
+- Tailwind CSS with shadcn/ui components
+- Lovable Cloud (Supabase) to store scans and findings
+- AI analysis through server functions, and `pdf-lib` for reports
+- Built and hosted with [Lovable](https://lovable.dev)
+
+---
+
+Built by **Wiam El Youbi**.
